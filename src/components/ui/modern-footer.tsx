@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Twitter, Linkedin, Heart, ArrowRight } from 'lucide-react';
+import { Twitter, Linkedin, Heart, ArrowRight, Instagram } from 'lucide-react';
 
 export const ModernFooter: React.FC = () => {
   const footerSections = [
@@ -55,29 +55,29 @@ export const ModernFooter: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <motion.div 
+            <motion.div
               className="flex items-center space-x-3 mb-6"
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
               <div className="relative">
-                <img 
-                  src="/logofinal.png" 
-                  alt="EarnBuddy" 
+                <img
+                  src="/logofinal.png"
+                  alt="EarnBuddy"
                   className="w-12 h-12 object-contain"
                 />
                 <div className="absolute inset-0 bg-emerald-500/20 rounded-lg blur-lg animate-pulse"></div>
               </div>
-              <span className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent">
+              <span className="text-3xl font-bold from-emerald-400 to-lime-400 bg-clip-text ">
                 EarnBuddy
               </span>
             </motion.div>
-            
+
             <p className="text-gray-400 text-lg mb-8 max-w-md leading-relaxed">
-              Where ambitious builders come together to turn ideas into reality. 
+              Where ambitious builders come together to turn ideas into reality.
               Build. Collaborate. Earn.
             </p>
-            
+
             <div className="flex space-x-4">
               <motion.a
                 href="https://twitter.com/earnbuddy"
@@ -101,6 +101,17 @@ export const ModernFooter: React.FC = () => {
                 <Linkedin className="w-6 h-6 relative z-10" />
                 <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </motion.a>
+              <motion.a
+                href="https://instagram.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center hover:bg-pink-600 transition-all duration-300 relative overflow-hidden group"
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Instagram className="w-6 h-6 relative z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              </motion.a>
             </div>
           </div>
 
@@ -112,7 +123,7 @@ export const ModernFooter: React.FC = () => {
               </h3>
               <ul className="space-y-4">
                 {section.links.map((link, linkIndex) => (
-                  <motion.li 
+                  <motion.li
                     key={link.name}
                     initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
@@ -139,7 +150,7 @@ export const ModernFooter: React.FC = () => {
             <p className="text-gray-400 text-sm mb-4 md:mb-0">
               © 2025 EarnBuddy. All rights reserved.
             </p>
-            
+
             <div className="flex items-center space-x-6 text-sm">
               <a href="#" className="text-gray-400 hover:text-emerald-400 transition-colors">
                 Privacy Policy
@@ -148,14 +159,6 @@ export const ModernFooter: React.FC = () => {
                 Terms of Service
               </a>
               <div className="flex items-center space-x-2 text-gray-400">
-                <span>Made with</span>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  <Heart className="w-4 h-4 text-red-500 fill-current" />
-                </motion.div>
-                <span>by builders, for builders</span>
               </div>
             </div>
           </div>

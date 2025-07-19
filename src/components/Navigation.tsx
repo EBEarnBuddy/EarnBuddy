@@ -32,7 +32,7 @@ const Navigation: React.FC = () => {
       });
       setActiveSection(currentSection || '');
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -76,37 +76,37 @@ const Navigation: React.FC = () => {
     <>
       <motion.nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out ${
-          isScrolled 
-            ? 'mx-4 mt-4' 
+          isScrolled
+            ? 'mx-4 mt-4'
             : ''
         }`}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
       >
-        <GlassMorphism 
+        <GlassMorphism
           intensity={isScrolled ? 'heavy' : 'light'}
           className={`${isScrolled ? 'rounded-2xl shadow-2xl' : 'rounded-none'} border-0 ${isScrolled ? 'border' : ''} border-white/20 dark:border-gray-700/20`}
         >
           <div className={`${isScrolled ? 'px-4 sm:px-8 py-4' : 'container mx-auto px-4 sm:px-8 py-6'}`}>
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <motion.div 
+              <motion.div
                 className="flex items-center space-x-4 cursor-pointer"
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 onClick={() => navigate('/')}
               >
                 <div className="relative group">
-                  <img 
-                    src="/logofinal.png" 
-                    alt="EarnBuddy" 
+                  <img
+                    src="/logofinal.png"
+                    alt="EarnBuddy"
                     className="w-8 h-8 sm:w-10 sm:h-10 object-contain transition-all duration-300 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-emerald-500/20 rounded-lg blur-lg animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-                <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
-                  EarnBuddy
+                <span className="text-lg sm:text-xl font-bold">
+                  <span className="text-emerald-600 dark:text-emerald-400">Earn</span><span className="text-lime-600 dark:text-lime-400">Buddy</span>
                 </span>
               </motion.div>
 
@@ -115,14 +115,14 @@ const Navigation: React.FC = () => {
                 {navItems.map((item, index) => {
                   const sectionId = item.href.replace('#', '');
                   const isActive = activeSection === sectionId;
-                  
+
                   return (
                     <motion.button
                       key={item.name}
                       onClick={() => scrollToSection(item.href)}
                       className={`relative px-3 xl:px-6 py-3 font-medium transition-all duration-300 ease-out rounded-xl group text-sm xl:text-base ${
-                        isActive 
-                          ? 'text-emerald-600 dark:text-emerald-400' 
+                        isActive
+                          ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400'
                       }`}
                       whileHover={{ scale: 1.05 }}
@@ -203,7 +203,7 @@ const Navigation: React.FC = () => {
                 {navItems.map((item, index) => {
                   const sectionId = item.href.replace('#', '');
                   const isActive = activeSection === sectionId;
-                  
+
                   return (
                     <motion.button
                       key={item.name}
