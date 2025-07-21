@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FirestoreService, Pod, Post, Room, Message, Startup, FreelanceGig, Notification } from '../lib/firestore';
+import { FirestoreService, Pod, Post, Room, Message, Startup, FreelanceGig, Notification, ChatMessage, OnboardingResponse } from '../lib/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 // Custom hooks for Firestore operations
@@ -370,4 +370,181 @@ export const useNotifications = () => {
   const unreadCount = notifications.filter(n => !n.seen).length;
 
   return { notifications, loading, error, markAsRead, unreadCount };
+};
+
+// Enhanced Chat Messages Hook
+export const useRoomChatMessages = (roomId: string) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    setLoading(true);
+    
+    // Set up real-time listener for chat messages
+    const unsubscribe = FirestoreService.subscribeToRoomChatMessages(roomId, (newMessages) => {
+      setMessages(newMessages);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [roomId]);
+
+  const sendMessage = async (content: string, senderId: string, senderName: string, senderAvatar?: string, type: 'text' | 'image' | 'file' | 'video' = 'text', attachment?: any) => {
+    try {
+      await FirestoreService.sendChatMessage({
+        roomId,
+        senderId,
+        senderName,
+        senderAvatar,
+        content,
+        type,
+        attachment
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    }
+  };
+
+  const addReaction = async (messageId: string, emoji: string, userId: string) => {
+    try {
+      await FirestoreService.addReactionToMessage(messageId, emoji, userId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add reaction');
+    }
+  };
+
+  return { messages, loading, error, sendMessage, addReaction };
+};
+
+// Enhanced Pod Posts Hook
+export const useEnhancedPodPosts = (podId: string) => {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!podId) return;
+
+    setLoading(true);
+    
+    // Set up real-time listener for pod posts
+    const unsubscribe = FirestoreService.subscribeToPodPosts(podId, (newPosts) => {
+      setPosts(newPosts);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [podId]);
+
+  const createPost = async (content: string, userId: string, imageUrl?: string) => {
+    try {
+      await FirestoreService.createPodPost(podId, userId, content, imageUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create post');
+    }
+  };
+
+  return { posts, loading, error, createPost };
+};
+
+// Onboarding Hook
+export const useOnboarding = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
+
+  const saveOnboardingResponse = async (data: {
+    role: string;
+    skills: string[];
+    interests: string[];
+    experience: string;
+    location: string;
+    goals: string[];
+    availability: string;
+  }) => {
+    if (!currentUser) return;
+    
+    try {
+      setLoading(true);
+      await FirestoreService.saveOnboardingResponse({
+        userId: currentUser.uid,
+        ...data
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save onboarding data');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getOnboardingResponse = async (userId: string): Promise<OnboardingResponse | null> => {
+    try {
+      return await FirestoreService.getOnboardingResponse(userId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to get onboarding data');
+      return null;
+    }
+  };
+
+  return { saveOnboardingResponse, getOnboardingResponse, loading, error };
+};
+
+// Analytics Hook
+export const useAnalytics = () => {
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const data = await FirestoreService.getUserAnalytics(currentUser.uid);
+        setAnalytics(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [currentUser]);
+
+  return { analytics, loading, error };
+};
+
+// Recommendations Hook
+export const useRecommendations = () => {
+  const [recommendations, setRecommendations] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchRecommendations = async () => {
+      try {
+        setLoading(true);
+        const data = await FirestoreService.getPersonalizedRecommendations(currentUser.uid);
+        setRecommendations(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [currentUser]);
+
+  return { recommendations, loading, error };
 };

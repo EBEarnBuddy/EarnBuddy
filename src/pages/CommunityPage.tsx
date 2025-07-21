@@ -261,23 +261,131 @@ const CommunityPage: React.FC = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Pod</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Pod creation is coming soon! For now, join existing pods to start collaborating.
-              </p>
-              <motion.button
-                onClick={() => setShowCreateModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Got it
-              </motion.button>
+              <CreatePodForm onClose={() => setShowCreateModal(false)} />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+const CreatePodForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { currentUser } = useAuth();
+  const { createPod } = usePods();
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: '',
+    isPrivate: false
+  });
+  const [loading, setLoading] = useState(false);
+
+  const categories = [
+    { id: 'ai', name: 'AI & ML', theme: 'from-blue-500 to-purple-600', icon: 'Cpu' },
+    { id: 'web3', name: 'Web3', theme: 'from-purple-500 to-pink-600', icon: 'Globe' },
+    { id: 'climate', name: 'Climate Tech', theme: 'from-green-500 to-emerald-600', icon: 'Leaf' },
+    { id: 'design', name: 'Design', theme: 'from-pink-500 to-red-600', icon: 'Palette' },
+    { id: 'fintech', name: 'FinTech', theme: 'from-yellow-500 to-orange-600', icon: 'DollarSign' }
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !formData.name.trim()) return;
+
+    setLoading(true);
+    try {
+      const selectedCategory = categories.find(c => c.id === formData.category);
+      const podData = {
+        name: formData.name,
+        slug: formData.name.toLowerCase().replace(/\s+/g, '-'),
+        description: formData.description,
+        theme: selectedCategory?.theme || 'from-gray-500 to-gray-600',
+        icon: selectedCategory?.icon || 'Users',
+        members: [currentUser.uid],
+        posts: [],
+        events: [],
+        pinnedResources: [],
+        isActive: true
+      };
+
+      await createPod(podData);
+      onClose();
+    } catch (error) {
+      console.error('Error creating pod:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Pod</h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Pod Name
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            placeholder="Enter pod name"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+            rows={3}
+            placeholder="Describe your pod"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Category
+          </label>
+          <select
+            value={formData.category}
+            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            required
+          >
+            <option value="">Select a category</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading || !formData.name.trim()}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Creating...' : 'Create Pod'}
+        </button>
+      </div>
+    </form>
   );
 };
 

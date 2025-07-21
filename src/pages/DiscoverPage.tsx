@@ -27,7 +27,7 @@ import {
   Video
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePods, useGigs, useStartups } from '../hooks/useFirestore';
+import { usePods, useGigs, useStartups, useAnalytics, useRecommendations, useOnboarding } from '../hooks/useFirestore';
 import { TrendingPods } from '../components/ui/trending-pods';
 import { BuilderFeed } from '../components/ui/builder-feed';
 import { FloatingCard } from '../components/ui/floating-card';
@@ -44,13 +44,16 @@ const DiscoverPage: React.FC = () => {
   const { pods, loading: podsLoading } = usePods();
   const { gigs, loading: gigsLoading } = useGigs();
   const { startups, loading: startupsLoading } = useStartups();
+  const { analytics, loading: analyticsLoading } = useAnalytics();
+  const { recommendations, loading: recommendationsLoading } = useRecommendations();
+  const { saveOnboardingResponse } = useOnboarding();
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(!userProfile?.skills?.length);
+  const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
 
   // Mock notifications
   const notifications = [
@@ -103,57 +106,139 @@ const DiscoverPage: React.FC = () => {
 
   const handleOnboardingComplete = (data: any) => {
     console.log('Onboarding data:', data);
-    setShowOnboarding(false);
-    // Update user profile with onboarding data
+    
+    // Save onboarding data to database
+    saveOnboardingResponse(data).then(() => {
+      setShowOnboarding(false);
+      // Refresh the page to show personalized content
+      window.location.reload();
+    }).catch(error => {
+      console.error('Error saving onboarding data:', error);
+    });
   };
-  const quickActions = [
-    { 
-      title: 'Community Pods', 
-      description: 'Join builder communities', 
-      icon: Hash, 
-      path: '/community', 
-      color: 'from-blue-500 to-purple-600',
-      count: pods.length
-    },
-    { 
-      title: 'Freelance Gigs', 
-      description: 'Find freelance opportunities', 
-      icon: Briefcase, 
-      path: '/freelance', 
-      color: 'from-green-500 to-emerald-600',
-      count: gigs.length
-    },
-    { 
-      title: 'Startups', 
-      description: 'Discover startup opportunities', 
-      icon: Rocket, 
-      path: '/startups', 
-      color: 'from-purple-500 to-pink-600',
-      count: startups.length
-    },
-    { 
-      title: 'Chat Rooms', 
-      description: 'Connect in real-time', 
-      icon: MessageCircle, 
-      path: '/rooms', 
-      color: 'from-orange-500 to-red-600',
-      count: 12
+
+  // Personalized quick actions based on user's onboarding
+  const getPersonalizedQuickActions = () => {
+    const baseActions = [
+      { 
+        title: 'Community Pods', 
+        description: 'Join builder communities', 
+        icon: Hash, 
+        path: '/community', 
+        color: 'from-blue-500 to-purple-600',
+        count: pods.length
+      },
+      { 
+        title: 'Freelance Gigs', 
+        description: 'Find freelance opportunities', 
+        icon: Briefcase, 
+        path: '/freelance', 
+        color: 'from-green-500 to-emerald-600',
+        count: gigs.length
+      },
+      { 
+        title: 'Startups', 
+        description: 'Discover startup opportunities', 
+        icon: Rocket, 
+        path: '/startups', 
+        color: 'from-purple-500 to-pink-600',
+        count: startups.length
+      },
+      { 
+        title: 'Chat Rooms', 
+        description: 'Connect in real-time', 
+        icon: MessageCircle, 
+        path: '/rooms', 
+        color: 'from-orange-500 to-red-600',
+        count: 12
+      }
+    ];
+
+    // Reorder based on user's role from onboarding
+    if (userProfile?.onboardingData?.role === 'freelancer') {
+      return [baseActions[1], baseActions[0], baseActions[2], baseActions[3]]; // Freelance first
+    } else if (userProfile?.onboardingData?.role === 'founder') {
+      return [baseActions[2], baseActions[1], baseActions[0], baseActions[3]]; // Startups first
+    } else if (userProfile?.onboardingData?.role === 'builder') {
+      return [baseActions[0], baseActions[3], baseActions[1], baseActions[2]]; // Community first
     }
-  ];
+    
+    return baseActions;
+  };
 
-  const stats = [
-    { label: 'Active Builders', value: '2,847', icon: Users, change: '+12%' },
-    { label: 'Projects Launched', value: '156', icon: Rocket, change: '+8%' },
-    { label: 'Successful Matches', value: '94%', icon: Target, change: '+2%' },
-    { label: 'Total Earnings', value: '$2.4M', icon: Award, change: '+15%' }
-  ];
+  const quickActions = getPersonalizedQuickActions();
 
-  const recentActivity = [
-    { type: 'New Gig', title: 'Frontend Developer needed for SaaS platform', time: '2 min ago', urgent: true },
-    { type: 'Startup', title: 'HealthTech startup looking for co-founder', time: '5 min ago', urgent: false },
-    { type: 'Pod Update', title: 'AI Builders pod reached 500 members', time: '10 min ago', urgent: false },
-    { type: 'New Member', title: 'Sarah Chen joined Climate Tech pod', time: '15 min ago', urgent: false }
-  ];
+  // Personalized stats based on user data
+  const getPersonalizedStats = () => {
+    { 
+    if (!analytics) {
+      return [
+        { label: 'Active Builders', value: '2,847', icon: Users, change: '+12%' },
+        { label: 'Projects Launched', value: '156', icon: Rocket, change: '+8%' },
+        { label: 'Successful Matches', value: '94%', icon: Target, change: '+2%' },
+        { label: 'Total Earnings', value: '$2.4M', icon: Award, change: '+15%' }
+      ];
+    }
+
+    return [
+      { label: 'Profile Views', value: analytics.profileViews.toString(), icon: Eye, change: '+12%' },
+      { label: 'Posts Created', value: analytics.postsCreated.toString(), icon: MessageCircle, change: '+8%' },
+      { label: 'Pods Joined', value: analytics.podsJoined.toString(), icon: Users, change: '+2%' },
+      { label: 'Projects Completed', value: analytics.completedProjects.toString(), icon: Award, change: '+15%' }
+    ];
+  };
+
+  const stats = getPersonalizedStats();
+
+  // Personalized activity based on recommendations
+  const getPersonalizedActivity = () => {
+    if (!recommendations) {
+      return [
+        { type: 'New Gig', title: 'Frontend Developer needed for SaaS platform', time: '2 min ago', urgent: true },
+        { type: 'Startup', title: 'HealthTech startup looking for co-founder', time: '5 min ago', urgent: false },
+        { type: 'Pod Update', title: 'AI Builders pod reached 500 members', time: '10 min ago', urgent: false },
+        { type: 'New Member', title: 'Sarah Chen joined Climate Tech pod', time: '15 min ago', urgent: false }
+      ];
+    }
+
+    const activity = [];
+    
+    // Add recommended gigs
+    if (recommendations.recommendedGigs?.length > 0) {
+      activity.push({
+        type: 'Recommended Gig',
+        title: recommendations.recommendedGigs[0].title,
+        time: '2 min ago',
+        urgent: true
+      });
+    }
+
+    // Add recommended startups
+    if (recommendations.recommendedStartups?.length > 0) {
+      activity.push({
+        type: 'Recommended Startup',
+        title: `${recommendations.recommendedStartups[0].name} is looking for ${userProfile?.onboardingData?.role || 'builders'}`,
+        time: '5 min ago',
+        urgent: false
+      });
+    }
+
+    // Add recommended pods
+    if (recommendations.recommendedPods?.length > 0) {
+      activity.push({
+        type: 'Recommended Pod',
+        title: `${recommendations.recommendedPods[0].name} matches your interests`,
+        time: '10 min ago',
+        urgent: false
+      });
+    }
+
+    return activity.length > 0 ? activity : [
+      { type: 'Welcome', title: 'Complete your profile to get personalized recommendations', time: 'Now', urgent: true }
+    ];
+  };
+
+  const recentActivity = getPersonalizedActivity();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -324,10 +409,20 @@ const DiscoverPage: React.FC = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}! 👋
+            Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}! 
+            {userProfile?.onboardingData?.role && (
+              <span className="text-emerald-600 dark:text-emerald-400"> 
+                ({userProfile.onboardingData.role.charAt(0).toUpperCase() + userProfile.onboardingData.role.slice(1)})
+              </span>
+            )} 👋
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Here's what's happening in your builder network today.
+            {userProfile?.onboardingData?.role === 'freelancer' 
+              ? "Here are the latest freelance opportunities matching your skills."
+              : userProfile?.onboardingData?.role === 'founder'
+              ? "Discover talented builders and grow your startup team."
+              : "Here's what's happening in your builder network today."
+            }
           </p>
         </motion.div>
 
@@ -497,6 +592,69 @@ const DiscoverPage: React.FC = () => {
               )}
             </motion.section>
 
+            {/* Personalized Recommendations */}
+            {recommendations && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                <FloatingCard className="p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                    Recommended for You
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {recommendations.recommendedGigs?.slice(0, 2).map((gig: any, index: number) => (
+                      <motion.div
+                        key={gig.id}
+                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-emerald-300 dark:hover:border-emerald-500 transition-colors cursor-pointer"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        onClick={() => navigate('/freelance')}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{gig.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{gig.description}</p>
+                            <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                              <span>{gig.budget}</span>
+                              <span>•</span>
+                              <span>{gig.duration}</span>
+                            </div>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {recommendations.recommendedPods?.slice(0, 1).map((pod: any, index: number) => (
+                      <motion.div
+                        key={pod.id}
+                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-emerald-300 dark:hover:border-emerald-500 transition-colors cursor-pointer"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                        onClick={() => navigate('/community')}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{pod.name} Pod</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{pod.description}</p>
+                            <div className="text-xs text-blue-600 dark:text-blue-400">
+                              {pod.memberCount || pod.members?.length || 0} members
+                            </div>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </FloatingCard>
+              </motion.section>
+            )}
+
             {/* Quick Stats */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
@@ -510,13 +668,15 @@ const DiscoverPage: React.FC = () => {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Profile Completion</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">85%</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {userProfile?.onboardingCompleted ? '100%' : '85%'}
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <motion.div 
                         className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2 rounded-full"
                         initial={{ width: 0 }}
-                        animate={{ width: "85%" }}
+                        animate={{ width: userProfile?.onboardingCompleted ? "100%" : "85%" }}
                         transition={{ duration: 1, delay: 0.8 }}
                       />
                     </div>
@@ -525,13 +685,15 @@ const DiscoverPage: React.FC = () => {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Network Growth</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">67%</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {Math.min(((analytics?.podsJoined || 0) * 20), 100)}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <motion.div 
                         className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full"
                         initial={{ width: 0 }}
-                        animate={{ width: "67%" }}
+                        animate={{ width: `${Math.min(((analytics?.podsJoined || 0) * 20), 100)}%` }}
                         transition={{ duration: 1, delay: 1 }}
                       />
                     </div>
@@ -539,14 +701,16 @@ const DiscoverPage: React.FC = () => {
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Project Success</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">92%</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Activity Score</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {Math.min(((analytics?.postsCreated || 0) * 10 + (analytics?.messagesPosted || 0) * 2), 100)}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <motion.div 
                         className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full"
                         initial={{ width: 0 }}
-                        animate={{ width: "92%" }}
+                        animate={{ width: `${Math.min(((analytics?.postsCreated || 0) * 10 + (analytics?.messagesPosted || 0) * 2), 100)}%` }}
                         transition={{ duration: 1, delay: 1.2 }}
                       />
                     </div>
@@ -559,10 +723,11 @@ const DiscoverPage: React.FC = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate('/profile')}
                 >
-                  Complete Profile
+                  {userProfile?.onboardingCompleted ? 'View Profile' : 'Complete Profile'}
                 </motion.button>
               </FloatingCard>
             </motion.section>
+
           </div>
         </div>
       </div>

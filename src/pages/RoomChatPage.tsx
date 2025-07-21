@@ -181,10 +181,9 @@ const RoomChatPage: React.FC = () => {
       <div className="container mx-auto px-6 py-6 h-[calc(100vh-88px)]">
         <ChatInterface
           roomName={room.name}
+          roomId={roomId!}
           members={room.members.length}
           onlineMembers={Math.floor(room.members.length * 0.6)}
-          messages={mockMessages}
-          onSendMessage={handleSendMessage}
         />
       </div>
     </div>

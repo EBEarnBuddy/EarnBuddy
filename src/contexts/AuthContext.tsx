@@ -59,6 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           skills: [],
           interests: [],
           location: '',
+          onboardingCompleted: false,
+          onboardingData: undefined,
           joinedPods: [],
           joinedRooms: [],
           postedStartups: [],
@@ -190,10 +192,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (!firebaseReady || !auth) {
-      setLoading(false);
+    if (currentUser && isFirebaseReady && !loading && location.pathname === '/' && userProfile?.onboardingCompleted) {
       return;
     }
-
+  }, [currentUser, isFirebaseReady, loading, navigate, location.pathname, userProfile]);
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {

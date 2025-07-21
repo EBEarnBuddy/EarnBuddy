@@ -2,50 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Smile, Paperclip, MoreVertical, Users, Hash, AtSign, Pin, Settings, Image, Video, Mic, File, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-
-interface Message {
-  id: string;
-  user: {
-    name: string;
-    avatar: string;
-    isOnline?: boolean;
-    role?: string;
-  };
-  content: string;
-  timestamp: string;
-  type?: 'text' | 'image' | 'video' | 'file';
-  attachment?: {
-    url: string;
-    name: string;
-    type: string;
-    size?: string;
-  };
-}
+import { useRoomChatMessages } from '../../hooks/useFirestore';
 
 interface ChatInterfaceProps {
   roomName: string;
+  roomId: string;
   members: number;
   onlineMembers: number;
-  messages?: Message[];
-  onSendMessage?: (content: string, type?: 'text' | 'image' | 'video' | 'file', attachment?: any) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   roomName, 
+  roomId,
   members, 
-  onlineMembers,
-  messages = [],
-  onSendMessage
+  onlineMembers
 }) => {
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<string[]>(['Lisa']);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+  const { messages, loading, sendMessage, addReaction } = useRoomChatMessages(roomId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,12 +35,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [messages]);
 
   const handleSendMessage = () => {
-    if ((newMessage.trim() || selectedFile) && onSendMessage) {
+    if (!currentUser || !newMessage.trim()) return;
+    
+    try {
       if (selectedFile) {
         // Handle file upload
         const fileType = selectedFile.type.startsWith('image/') ? 'image' : 
                         selectedFile.type.startsWith('video/') ? 'video' : 'file';
-        onSendMessage(newMessage || `Shared a ${fileType}`, fileType, {
+        
+        sendMessage(newMessage || `Shared a ${fileType}`, currentUser.uid, 
+          userProfile?.displayName || currentUser.displayName || 'Anonymous', 
+          userProfile?.photoURL || currentUser.photoURL || '', fileType, {
           file: selectedFile,
           url: previewUrl,
           name: selectedFile.name,
@@ -71,9 +55,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setSelectedFile(null);
         setPreviewUrl(null);
       } else {
-        onSendMessage(newMessage);
+        sendMessage(newMessage, currentUser.uid, 
+          userProfile?.displayName || currentUser.displayName || 'Anonymous',
+          userProfile?.photoURL || currentUser.photoURL || '');
       }
       setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
     }
   };
 
@@ -140,7 +129,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const renderMessage = (message: Message, index: number) => (
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return 'Just now';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    if (!currentUser) return;
+    try {
+      await addReaction(messageId, emoji, currentUser.uid);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    }
+  };
+
+  const renderMessage = (message: any, index: number) => (
     <motion.div
       key={message.id}
       className="group"
@@ -151,33 +155,47 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex items-start gap-3 hover:bg-white/50 dark:hover:bg-gray-700/50 p-2 rounded-lg transition-colors">
         <div className="relative">
           <img
-            src={message.user?.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
-            alt={message.user?.name || "User"}
+            src={message.senderAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
+            alt={message.senderName || "User"}
             className="w-10 h-10 rounded-full object-cover"
           />
-          {message.user?.isOnline && (
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
             <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-          )}
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-              {message.user?.name || "User"}
+              {message.senderName || "User"}
             </span>
-            {message.user?.role && (
-              <span className={`text-xs font-medium ${getRoleColor(message.user.role)}`}>
-                {message.user.role}
-              </span>
-            )}
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              {message.timestamp}
+              {formatTimestamp(message.timestamp)}
             </span>
           </div>
           
           <div className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-2">
             {message.content}
           </div>
+
+          {/* Reactions */}
+          {message.reactions && Object.keys(message.reactions).length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(message.id, emoji)}
+                  className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
+                    currentUser && userIds.includes(currentUser.uid)
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span>{emoji}</span>
+                  <span>{userIds.length}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Render attachment if present */}
           {message.attachment && (
@@ -216,6 +234,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
             </div>
           )}
+
+          {/* Quick Reactions */}
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+            <div className="flex gap-1">
+              {['👍', '❤️', '😄', '🎉', '🚀'].map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(message.id, emoji)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -277,18 +310,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
-        <AnimatePresence>
-          {messages.length > 0 ? (
-            messages.map((message, index) => renderMessage(message, index))
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64">
-              <Hash className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-center">
-                No messages yet. Start the conversation!
-              </p>
-            </div>
-          )}
-        </AnimatePresence>
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {messages.length > 0 ? (
+              messages.map((message, index) => renderMessage(message, index))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64">
+                <Hash className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                  No messages yet. Start the conversation!
+                </p>
+              </div>
+            )}
+          </AnimatePresence>
+        )}
         
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (

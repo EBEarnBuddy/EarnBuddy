@@ -335,29 +335,255 @@ const FreelancePage: React.FC = () => {
             onClick={() => setShowCreateModal(false)}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full"
+              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Post New Gig</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Gig posting is coming soon! For now, browse and apply to existing opportunities.
-              </p>
-              <motion.button
-                onClick={() => setShowCreateModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Got it
-              </motion.button>
+              <CreateGigForm onClose={() => setShowCreateModal(false)} />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+const CreateGigForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { currentUser } = useAuth();
+  const { createGig } = useGigs();
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    tags: [] as string[],
+    budget: '',
+    duration: '',
+    requirements: [] as string[],
+    category: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [currentTag, setCurrentTag] = useState('');
+  const [currentRequirement, setCurrentRequirement] = useState('');
+
+  const categories = ['Development', 'Design', 'Marketing', 'Writing', 'Data Science', 'AI/ML'];
+  const budgetRanges = ['Under $1,000', '$1,000 - $5,000', '$5,000 - $10,000', '$10,000+'];
+  const durations = ['1-2 weeks', '3-4 weeks', '1-2 months', '3+ months'];
+
+  const addTag = () => {
+    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
+      setFormData(prev => ({ ...prev, tags: [...prev.tags, currentTag.trim()] }));
+      setCurrentTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }));
+  };
+
+  const addRequirement = () => {
+    if (currentRequirement.trim() && !formData.requirements.includes(currentRequirement.trim())) {
+      setFormData(prev => ({ ...prev, requirements: [...prev.requirements, currentRequirement.trim()] }));
+      setCurrentRequirement('');
+    }
+  };
+
+  const removeRequirement = (reqToRemove: string) => {
+    setFormData(prev => ({ ...prev, requirements: prev.requirements.filter(req => req !== reqToRemove) }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    setLoading(true);
+    try {
+      await createGig({
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags,
+        budget: formData.budget,
+        duration: formData.duration,
+        postedBy: currentUser.uid,
+        applicants: [],
+        status: 'open',
+        requirements: formData.requirements
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error creating gig:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Post New Gig</h3>
+      
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Gig Title
+          </label>
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            placeholder="e.g., Frontend Developer for E-commerce Platform"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+            rows={4}
+            placeholder="Describe the project, requirements, and expectations..."
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Budget
+            </label>
+            <select
+              value={formData.budget}
+              onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select budget range</option>
+              {budgetRanges.map(range => (
+                <option key={range} value={range}>{range}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Duration
+            </label>
+            <select
+              value={formData.duration}
+              onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select duration</option>
+              {durations.map(duration => (
+                <option key={duration} value={duration}>{duration}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Skills/Tags
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={currentTag}
+              onChange={(e) => setCurrentTag(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder="Add a skill or technology"
+            />
+            <button
+              type="button"
+              onClick={addTag}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.tags.map(tag => (
+              <span
+                key={tag}
+                className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-sm flex items-center gap-2"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="text-emerald-600 hover:text-emerald-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Requirements
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={currentRequirement}
+              onChange={(e) => setCurrentRequirement(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+              className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder="Add a requirement"
+            />
+            <button
+              type="button"
+              onClick={addRequirement}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          <div className="space-y-2">
+            {formData.requirements.map(req => (
+              <div
+                key={req}
+                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <span className="text-sm text-gray-700 dark:text-gray-300">{req}</span>
+                <button
+                  type="button"
+                  onClick={() => removeRequirement(req)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-8">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading || !formData.title.trim() || !formData.description.trim()}
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Posting...' : 'Post Gig'}
+        </button>
+      </div>
+    </form>
   );
 };
 

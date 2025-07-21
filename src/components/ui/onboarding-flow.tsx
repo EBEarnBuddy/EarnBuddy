@@ -14,7 +14,10 @@ import {
   BarChart,
   Globe,
   MapPin,
-  Star
+  Star,
+  TrendingUp,
+  DollarSign,
+  Settings
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -215,7 +218,8 @@ const RoleStep: React.FC<{ data: OnboardingData; updateData: (key: keyof Onboard
     { id: 'freelancer', label: 'Freelancer', icon: Briefcase, description: 'I want to find projects and clients' },
     { id: 'founder', label: 'Startup Founder', icon: Target, description: 'I\'m building a startup and need co-founders/team' },
     { id: 'builder', label: 'Builder/Creator', icon: User, description: 'I want to collaborate on projects and ideas' },
-    { id: 'investor', label: 'Investor/Mentor', icon: Star, description: 'I want to support and invest in startups' }
+    { id: 'investor', label: 'Investor/Mentor', icon: Star, description: 'I want to support and invest in startups' },
+    { id: 'explorer', label: 'Just Exploring', icon: Globe, description: 'I\'m here to learn and discover opportunities' }
   ];
 
   return (
@@ -252,7 +256,11 @@ const SkillsStep: React.FC<{ data: OnboardingData; updateData: (key: keyof Onboa
     { id: 'data', label: 'Data Science', icon: BarChart },
     { id: 'mobile', label: 'Mobile Development', icon: Code },
     { id: 'blockchain', label: 'Blockchain', icon: Globe },
-    { id: 'ai', label: 'AI/Machine Learning', icon: Code }
+    { id: 'ai', label: 'AI/Machine Learning', icon: Code },
+    { id: 'product', label: 'Product Management', icon: Target },
+    { id: 'sales', label: 'Sales & Business Development', icon: TrendingUp },
+    { id: 'finance', label: 'Finance & Accounting', icon: DollarSign },
+    { id: 'operations', label: 'Operations & Strategy', icon: Settings }
   ];
 
   const toggleSkill = (skillId: string) => {
@@ -301,7 +309,11 @@ const InterestsStep: React.FC<{ data: OnboardingData; updateData: (key: keyof On
     'Mobile Apps',
     'Gaming',
     'IoT',
-    'Cybersecurity'
+    'Cybersecurity',
+    'Social Impact',
+    'Creator Economy',
+    'Remote Work Tools',
+    'Developer Tools'
   ];
 
   const toggleInterest = (interest: string) => {
@@ -336,10 +348,12 @@ const InterestsStep: React.FC<{ data: OnboardingData; updateData: (key: keyof On
 
 const ExperienceStep: React.FC<{ data: OnboardingData; updateData: (key: keyof OnboardingData, value: any) => void }> = ({ data, updateData }) => {
   const experiences = [
-    { id: 'beginner', label: 'Just getting started', description: '0-1 years of experience' },
-    { id: 'intermediate', label: 'Some experience', description: '2-4 years of experience' },
-    { id: 'experienced', label: 'Experienced professional', description: '5-9 years of experience' },
-    { id: 'expert', label: 'Senior expert', description: '10+ years of experience' }
+    { id: 'student', label: 'Student/Learning', description: 'Currently studying or learning new skills' },
+    { id: 'beginner', label: 'Just getting started', description: '0-2 years of experience' },
+    { id: 'intermediate', label: 'Some experience', description: '2-5 years of experience' },
+    { id: 'experienced', label: 'Experienced professional', description: '5-10 years of experience' },
+    { id: 'expert', label: 'Senior expert', description: '10+ years of experience' },
+    { id: 'executive', label: 'Executive/Leadership', description: 'C-level or senior leadership experience' }
   ];
 
   return (
@@ -402,7 +416,11 @@ const GoalsStep: React.FC<{ data: OnboardingData; updateData: (key: keyof Onboar
     'Learn new skills',
     'Find a co-founder',
     'Invest in startups',
-    'Mentor others'
+    'Mentor others',
+    'Transition to tech career',
+    'Scale my business',
+    'Find remote work opportunities',
+    'Build a personal brand'
   ];
 
   const toggleGoal = (goal: string) => {

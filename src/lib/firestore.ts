@@ -1,646 +1,394 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  onSnapshot,
-  arrayUnion,
-  arrayRemove,
-  increment,
-  serverTimestamp,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from './firebase';
+  ArrowLeft, 
+  Search, 
+  Filter, 
+  Plus, 
+  MapPin, 
+  Users, 
+  TrendingUp, 
+  Star, 
+  Bookmark,
+  ExternalLink,
+  Rocket,
+  DollarSign,
+  Building,
+  Zap
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useStartups } from '../hooks/useFirestore';
+import { Skeleton } from '../components/ui/skeleton';
+import ThemeToggle from '../components/ThemeToggle';
 
-// Types
-export interface Pod {
-  id?: string;
-  name: string;
-  slug: string;
-  description: string;
-  theme: string;
-  icon: string;
-  members: string[];
-  posts: string[];
-  events: any[];
-  pinnedResources: any[];
-  createdAt: Timestamp;
-  memberCount: number;
-  isActive: boolean;
-}
+const StartupsPage: React.FC = () => {
+  const { currentUser, logout } = useAuth();
+  const { startups, loading, applyToStartup, bookmarkStartup, unbookmarkStartup } = useStartups();
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIndustry, setSelectedIndustry] = useState('all');
+  const [selectedStage, setSelectedStage] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-export interface Post {
-  id?: string;
-  podId: string;
-  userId: string;
-  content: string;
-  imageUrl?: string;
-  likes: string[];
-  replies: string[];
-  bookmarks: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
+  const industries = [
+    { id: 'all', name: 'All Industries', icon: Building },
+    { id: 'healthcare', name: 'Healthcare', icon: Star },
+    { id: 'fintech', name: 'FinTech', icon: DollarSign },
+    { id: 'education', name: 'EdTech', icon: Users },
+    { id: 'climate', name: 'Climate Tech', icon: Zap },
+    { id: 'ai', name: 'AI/ML', icon: Rocket }
+  ];
 
-export interface Reply {
-  id?: string;
-  postId: string;
-  userId: string;
-  content: string;
-  createdAt: Timestamp;
-}
+  const stages = [
+    { id: 'all', name: 'All Stages' },
+    { id: 'pre-seed', name: 'Pre-Seed' },
+    { id: 'seed', name: 'Seed' },
+    { id: 'series-a', name: 'Series A' },
+    { id: 'series-b', name: 'Series B+' }
+  ];
 
-export interface Room {
-  id?: string;
-  name: string;
-  description: string;
-  members: string[];
-  createdBy: string;
-  isPrivate: boolean;
-  messages: string[];
-  createdAt: Timestamp;
-  lastActivity: Timestamp;
-}
+  const filteredStartups = startups.filter(startup => {
+    const matchesSearch = startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         startup.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesIndustry = selectedIndustry === 'all' || 
+                           startup.industry.toLowerCase().includes(selectedIndustry);
+    const matchesStage = selectedStage === 'all' || 
+                        startup.stage.toLowerCase().replace(/\s+/g, '-').includes(selectedStage);
+    return matchesSearch && matchesIndustry && matchesStage;
+  });
 
-export interface Message {
-  id?: string;
-  roomId: string;
-  senderId: string;
-  content: string;
-  attachment?: {
-    url: string;
-    name: string;
-    type: string;
-    size?: string;
-  };
-  timestamp: Timestamp;
-  type: 'text' | 'image' | 'file' | 'video';
-}
-
-export interface Application {
-  userId: string;
-  appliedAt: Timestamp;
-  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
-  coverLetter?: string;
-  portfolio?: string;
-  userProfile?: {
-    name: string;
-    email: string;
-    avatar?: string;
-    skills: string[];
-    rating: number;
-    completedProjects: number;
-  };
-}
-
-export interface Startup {
-  id?: string;
-  name: string;
-  description: string;
-  industry: string;
-  stage: string;
-  location: string;
-  createdBy: string;
-  applicants: Application[];
-  status: 'active' | 'closed' | 'paused';
-  funding: string;
-  equity: string;
-  requirements: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  applicantCount: number;
-}
-
-export interface FreelanceGig {
-  id?: string;
-  title: string;
-  description: string;
-  tags: string[];
-  budget: string;
-  duration: string;
-  postedBy: string;
-  applicants: Application[];
-  status: 'open' | 'closed' | 'in-progress' | 'completed';
-  requirements: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  applicantCount: number;
-}
-
-export interface UserProfile {
-  id?: string;
-  uid: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  bio?: string;
-  skills: string[];
-  interests: string[];
-  location?: string;
-  joinedPods: string[];
-  joinedRooms: string[];
-  postedStartups: string[];
-  postedGigs: string[];
-  appliedGigs: Array<{
-    gigId: string;
-    appliedAt: Timestamp;
-    status: string;
-  }>;
-  appliedStartups: Array<{
-    startupId: string;
-    appliedAt: Timestamp;
-    status: string;
-  }>;
-  bookmarkedGigs: string[];
-  bookmarkedStartups: string[];
-  bookmarks: string[];
-  activityLog: any[];
-  rating: number;
-  completedProjects: number;
-  totalEarnings: string;
-  joinDate: Timestamp;
-}
-
-export interface Notification {
-  id?: string;
-  userId: string;
-  type: 'pod_activity' | 'room_message' | 'gig_application' | 'startup_application' | 'status_change';
-  title: string;
-  message: string;
-  seen: boolean;
-  timestamp: Timestamp;
-  relatedId?: string;
-}
-
-// Firestore service functions
-export class FirestoreService {
-  // Pods
-  static async createPod(pod: Omit<Pod, 'id' | 'createdAt' | 'memberCount'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'pods'), {
-      ...pod,
-      createdAt: serverTimestamp(),
-      memberCount: pod.members.length
-    });
-    return docRef.id;
-  }
-
-  static async getPods(): Promise<Pod[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(collection(db, 'pods'), orderBy('createdAt', 'desc'))
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Pod));
-  }
-
-  static async getPod(id: string): Promise<Pod | null> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docSnap = await getDoc(doc(db, 'pods', id));
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Pod : null;
-  }
-
-  static async joinPod(podId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'pods', podId), {
-      members: arrayUnion(userId),
-      memberCount: increment(1)
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', userId), {
-      joinedPods: arrayUnion(podId)
-    });
-  }
-
-  static async leavePod(podId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'pods', podId), {
-      members: arrayRemove(userId),
-      memberCount: increment(-1)
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', userId), {
-      joinedPods: arrayRemove(podId)
-    });
-  }
-
-  // Posts
-  static async createPost(post: Omit<Post, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'posts'), {
-      ...post,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef.id;
-  }
-
-  static async getPodPosts(podId: string): Promise<Post[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'posts'),
-        where('podId', '==', podId),
-        orderBy('createdAt', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
-  }
-
-  static async likePost(postId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'posts', postId), {
-      likes: arrayUnion(userId)
-    });
-  }
-
-  static async unlikePost(postId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'posts', postId), {
-      likes: arrayRemove(userId)
-    });
-  }
-
-  static async bookmarkPost(postId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'posts', postId), {
-      bookmarks: arrayUnion(userId)
-    });
-  }
-
-  // Rooms
-  static async createRoom(room: Omit<Room, 'id' | 'createdAt' | 'lastActivity'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'rooms'), {
-      ...room,
-      createdAt: serverTimestamp(),
-      lastActivity: serverTimestamp()
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', room.createdBy), {
-      joinedRooms: arrayUnion(docRef.id)
-    });
-    
-    return docRef.id;
-  }
-
-  static async getRooms(userId: string): Promise<Room[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'rooms'),
-        where('members', 'array-contains', userId),
-        orderBy('lastActivity', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
-  }
-
-  static async joinRoom(roomId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'rooms', roomId), {
-      members: arrayUnion(userId)
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', userId), {
-      joinedRooms: arrayUnion(roomId)
-    });
-  }
-
-  // Messages
-  static async sendMessage(message: Omit<Message, 'id' | 'timestamp'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'messages'), {
-      ...message,
-      timestamp: serverTimestamp()
-    });
-    
-    // Update room's last activity
-    await updateDoc(doc(db, 'rooms', message.roomId), {
-      lastActivity: serverTimestamp()
-    });
-    
-    return docRef.id;
-  }
-
-  static async getRoomMessages(roomId: string): Promise<Message[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'messages'),
-        where('roomId', '==', roomId),
-        orderBy('timestamp', 'asc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-  }
-
-  // Startups with Application Tracking
-  static async createStartup(startup: Omit<Startup, 'id' | 'createdAt' | 'updatedAt' | 'applicantCount'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'startups'), {
-      ...startup,
-      applicantCount: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', startup.createdBy), {
-      postedStartups: arrayUnion(docRef.id)
-    });
-    
-    return docRef.id;
-  }
-
-  static async getStartups(): Promise<Startup[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(collection(db, 'startups'), orderBy('createdAt', 'desc'))
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
-  }
-
-  static async applyToStartup(startupId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    
-    // Get user profile for application
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userProfile = userDoc.data() as UserProfile;
-    
-    const application: Application = {
-      userId,
-      appliedAt: serverTimestamp() as Timestamp,
-      status: 'pending',
-      coverLetter: applicationData?.coverLetter,
-      portfolio: applicationData?.portfolio,
-      userProfile: {
-        name: userProfile.displayName,
-        email: userProfile.email,
-        avatar: userProfile.photoURL,
-        skills: userProfile.skills,
-        rating: userProfile.rating,
-        completedProjects: userProfile.completedProjects
-      }
-    };
-    
-    // Update startup with application
-    await updateDoc(doc(db, 'startups', startupId), {
-      applicants: arrayUnion(application),
-      applicantCount: increment(1)
-    });
-    
-    // Update user profile with applied startup
-    await updateDoc(doc(db, 'users', userId), {
-      appliedStartups: arrayUnion({
-        startupId,
-        appliedAt: serverTimestamp(),
-        status: 'pending'
-      })
-    });
-  }
-
-  // Freelance Gigs with Application Tracking
-  static async createGig(gig: Omit<FreelanceGig, 'id' | 'createdAt' | 'updatedAt' | 'applicantCount'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'gigs'), {
-      ...gig,
-      applicantCount: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    
-    // Update user profile
-    await updateDoc(doc(db, 'users', gig.postedBy), {
-      postedGigs: arrayUnion(docRef.id)
-    });
-    
-    return docRef.id;
-  }
-
-  static async getGigs(): Promise<FreelanceGig[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(collection(db, 'gigs'), orderBy('createdAt', 'desc'))
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FreelanceGig));
-  }
-
-  static async applyToGig(gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    
-    // Get user profile for application
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userProfile = userDoc.data() as UserProfile;
-    
-    const application: Application = {
-      userId,
-      appliedAt: serverTimestamp() as Timestamp,
-      status: 'pending',
-      coverLetter: applicationData?.coverLetter,
-      portfolio: applicationData?.portfolio,
-      userProfile: {
-        name: userProfile.displayName,
-        email: userProfile.email,
-        avatar: userProfile.photoURL,
-        skills: userProfile.skills,
-        rating: userProfile.rating,
-        completedProjects: userProfile.completedProjects
-      }
-    };
-    
-    // Update gig with application
-    await updateDoc(doc(db, 'gigs', gigId), {
-      applicants: arrayUnion(application),
-      applicantCount: increment(1)
-    });
-    
-    // Update user profile with applied gig
-    await updateDoc(doc(db, 'users', userId), {
-      appliedGigs: arrayUnion({
-        gigId,
-        appliedAt: serverTimestamp(),
-        status: 'pending'
-      })
-    });
-  }
-
-  // Bookmark functions
-  static async bookmarkGig(gigId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', userId), {
-      bookmarkedGigs: arrayUnion(gigId)
-    });
-  }
-
-  static async unbookmarkGig(gigId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', userId), {
-      bookmarkedGigs: arrayRemove(gigId)
-    });
-  }
-
-  static async bookmarkStartup(startupId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', userId), {
-      bookmarkedStartups: arrayUnion(startupId)
-    });
-  }
-
-  static async unbookmarkStartup(startupId: string, userId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', userId), {
-      bookmarkedStartups: arrayRemove(startupId)
-    });
-  }
-
-  // Get user's posted opportunities
-  static async getUserPostedGigs(userId: string): Promise<FreelanceGig[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'gigs'),
-        where('postedBy', '==', userId),
-        orderBy('createdAt', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FreelanceGig));
-  }
-
-  static async getUserPostedStartups(userId: string): Promise<Startup[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'startups'),
-        where('createdBy', '==', userId),
-        orderBy('createdAt', 'desc')
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
-  }
-
-  // Get bookmarked opportunities
-  static async getBookmarkedGigs(gigIds: string[]): Promise<FreelanceGig[]> {
-    if (!db || gigIds.length === 0) return [];
-    const gigs: FreelanceGig[] = [];
-    
-    for (const gigId of gigIds) {
-      const docSnap = await getDoc(doc(db, 'gigs', gigId));
-      if (docSnap.exists()) {
-        gigs.push({ id: docSnap.id, ...docSnap.data() } as FreelanceGig);
-      }
+  const handleApplyToStartup = async (startupId: string) => {
+    if (!currentUser) return;
+    try {
+      await applyToStartup(startupId, currentUser.uid, {
+        coverLetter: 'I am excited about this opportunity and would love to contribute to your mission.',
+        portfolio: 'https://myportfolio.com'
+      });
+    } catch (error) {
+      console.error('Error applying to startup:', error);
     }
-    
-    return gigs;
-  }
+  };
 
-  static async getBookmarkedStartups(startupIds: string[]): Promise<Startup[]> {
-    if (!db || startupIds.length === 0) return [];
-    const startups: Startup[] = [];
-    
-    for (const startupId of startupIds) {
-      const docSnap = await getDoc(doc(db, 'startups', startupId));
-      if (docSnap.exists()) {
-        startups.push({ id: docSnap.id, ...docSnap.data() } as Startup);
-      }
+  const handleBookmarkStartup = async (startupId: string) => {
+    if (!currentUser) return;
+    try {
+      await bookmarkStartup(startupId, currentUser.uid);
+    } catch (error) {
+      console.error('Error bookmarking startup:', error);
     }
-    
-    return startups;
-  }
+  };
 
-  // User Profiles
-  static async createUserProfile(profile: Omit<UserProfile, 'id' | 'joinDate'>): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', profile.uid), {
-      ...profile,
-      appliedGigs: [],
-      appliedStartups: [],
-      bookmarkedGigs: [],
-      bookmarkedStartups: [],
-      joinDate: serverTimestamp()
-    });
-  }
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
-  static async getUserProfile(uid: string): Promise<UserProfile | null> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docSnap = await getDoc(doc(db, 'users', uid));
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as UserProfile : null;
-  }
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => navigate('/discover')}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </motion.button>
+              
+              <div className="flex items-center gap-3">
+                <img src="/logofinal.png" alt="EarnBuddy" className="w-8 h-8" />
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Startups</h1>
+              </div>
+            </div>
 
-  static async updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'users', uid), updates);
-  }
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <motion.button
+                onClick={handleLogout}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                Logout
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-  // Notifications
-  static async createNotification(notification: Omit<Notification, 'id' | 'timestamp'>): Promise<string> {
-    if (!db) throw new Error('Firestore not initialized');
-    const docRef = await addDoc(collection(db, 'notifications'), {
-      ...notification,
-      timestamp: serverTimestamp()
-    });
-    return docRef.id;
-  }
+      <div className="container mx-auto px-6 py-8">
+        {/* Search and Filters */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-6">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search startups..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
+                />
+              </div>
+            </div>
 
-  static async getUserNotifications(userId: string): Promise<Notification[]> {
-    if (!db) throw new Error('Firestore not initialized');
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'notifications'),
-        where('userId', '==', userId),
-        orderBy('timestamp', 'desc'),
-        limit(50)
-      )
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-  }
+            <motion.button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Plus className="w-5 h-5" />
+              List Startup
+            </motion.button>
+          </div>
 
-  static async markNotificationAsRead(notificationId: string): Promise<void> {
-    if (!db) throw new Error('Firestore not initialized');
-    await updateDoc(doc(db, 'notifications', notificationId), {
-      seen: true
-    });
-  }
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="flex flex-wrap gap-2">
+              {industries.map((industry) => {
+                const Icon = industry.icon;
+                return (
+                  <motion.button
+                    key={industry.id}
+                    onClick={() => setSelectedIndustry(industry.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
+                      selectedIndustry === industry.id
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {industry.name}
+                  </motion.button>
+                );
+              })}
+            </div>
 
-  // Real-time listeners
-  static subscribeToRoomMessages(roomId: string, callback: (messages: Message[]) => void) {
-    if (!db) throw new Error('Firestore not initialized');
-    return onSnapshot(
-      query(
-        collection(db, 'messages'),
-        where('roomId', '==', roomId),
-        orderBy('timestamp', 'asc')
-      ),
-      (snapshot) => {
-        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        callback(messages);
-      }
-    );
-  }
+            <select
+              value={selectedStage}
+              onChange={(e) => setSelectedStage(e.target.value)}
+              className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            >
+              {stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-  static subscribeToUserNotifications(userId: string, callback: (notifications: Notification[]) => void) {
-    if (!db) throw new Error('Firestore not initialized');
-    return onSnapshot(
-      query(
-        collection(db, 'notifications'),
-        where('userId', '==', userId),
-        orderBy('timestamp', 'desc'),
-        limit(20)
-      ),
-      (snapshot) => {
-        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-        callback(notifications);
-      }
-    );
-  }
-}
+        {/* Startups Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-start justify-between mb-4">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <Skeleton className="h-20 w-full mb-4" />
+                <div className="flex gap-2 mb-4">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <div className="flex justify-between items-center mb-4">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AnimatePresence>
+              {filteredStartups.map((startup, index) => {
+                const hasApplied = currentUser ? startup.applicants.some(app => app.userId === currentUser.uid) : false;
+                
+                return (
+                  <motion.div
+                    key={startup.id}
+                    className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    whileHover={{ y: -4 }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                          {startup.name}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
+                            {startup.industry}
+                          </span>
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                            {startup.stage}
+                          </span>
+                        </div>
+                      </div>
+                      <motion.button
+                        onClick={() => handleBookmarkStartup(startup.id!)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Bookmark className="w-5 h-5 text-gray-400 hover:text-emerald-600" />
+                      </motion.button>
+                    </div>
+
+                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
+                      {startup.description}
+                    </p>
+
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{startup.location}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        <span className="font-semibold">{startup.funding}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="w-4 h-4" />
+                        <span>{startup.equity}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
+                        <Users className="w-4 h-4" />
+                        <span>{startup.applicantCount || startup.applicants.length} applicants</span>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        startup.status === 'active' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {startup.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Looking for:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {startup.requirements.slice(0, 3).map((req, reqIndex) => (
+                            <span
+                              key={reqIndex}
+                              className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full"
+                            >
+                              {req}
+                            </span>
+                          ))}
+                          {startup.requirements.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs rounded-full">
+                              +{startup.requirements.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <motion.button
+                          onClick={() => handleApplyToStartup(startup.id!)}
+                          disabled={hasApplied}
+                          className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                            hasApplied
+                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-lg'
+                          }`}
+                          whileHover={{ scale: hasApplied ? 1 : 1.02 }}
+                          whileTap={{ scale: hasApplied ? 1 : 0.98 }}
+                        >
+                          {hasApplied ? 'Applied' : 'Apply to Join'}
+                        </motion.button>
+                        <motion.button
+                          className="px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <ExternalLink className="w-5 h-5" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {!loading && filteredStartups.length === 0 && (
+          <div className="text-center py-12">
+            <Rocket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No startups found</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {searchTerm ? 'Try adjusting your search terms' : 'Be the first to list your startup!'}
+            </p>
+            <motion.button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              List Your Startup
+            </motion.button>
+          </div>
+        )}
+      </div>
+
+      {/* Create Startup Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCreateModal(false)}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">List Your Startup</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Startup listing is coming soon! For now, browse and apply to existing opportunities.
+              </p>
+              <motion.button
+                onClick={() => setShowCreateModal(false)}
+                className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Got it
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default StartupsPage;

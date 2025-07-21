@@ -18,7 +18,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePods, usePodPosts } from '../hooks/useFirestore';
+import { usePods, useEnhancedPodPosts } from '../hooks/useFirestore';
 import { PostCard } from '../components/ui/post-card';
 import { PodSidebar } from '../components/ui/pod-sidebar';
 import { Skeleton } from '../components/ui/skeleton';
@@ -28,7 +28,7 @@ const PodPage: React.FC = () => {
   const { podId } = useParams<{ podId: string }>();
   const { currentUser, userProfile, logout } = useAuth();
   const { pods, loading: podsLoading } = usePods();
-  const { posts, loading: postsLoading, createPost, likePost, unlikePost } = usePodPosts(podId || '');
+  const { posts, loading: postsLoading, createPost } = useEnhancedPodPosts(podId || '');
   const navigate = useNavigate();
   const [newPost, setNewPost] = useState('');
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -49,20 +49,8 @@ const PodPage: React.FC = () => {
   };
 
   const handleLikePost = async (postId: string) => {
-    if (!currentUser) return;
-    
-    const post = posts.find(p => p.id === postId);
-    if (!post) return;
-
-    try {
-      if (post.likes.includes(currentUser.uid)) {
-        await unlikePost(postId, currentUser.uid);
-      } else {
-        await likePost(postId, currentUser.uid);
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-    }
+    // TODO: Implement like functionality for enhanced posts
+    console.log('Like post:', postId);
   };
 
   const handleLogout = async () => {
@@ -270,15 +258,15 @@ const PodPage: React.FC = () => {
                     post={{
                       id: post.id!,
                       user: {
-                        name: userProfile?.displayName || 'Anonymous User',
-                        avatar: userProfile?.photoURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
+                        name: post.userName || 'Anonymous User',
+                        avatar: post.userAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
                         badge: 'Builder'
                       },
                       content: post.content,
                       image: post.imageUrl,
-                      timestamp: 'Just now',
+                      timestamp: post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : 'Just now',
                       likes: post.likes.length,
-                      replies: post.replies.length,
+                      replies: post.comments?.length || 0,
                       isLiked: currentUser ? post.likes.includes(currentUser.uid) : false
                     }}
                     onLike={handleLikePost}
