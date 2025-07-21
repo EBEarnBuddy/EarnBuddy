@@ -377,53 +377,6 @@ export const useNotifications = () => {
   return { notifications, loading, error, markAsRead, unreadCount };
 };
 
-// Enhanced Chat Messages Hook
-export const useRoomChatMessages = (roomId: string) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!roomId) return;
-
-    setLoading(true);
-    
-    // Set up real-time listener for chat messages
-    const unsubscribe = FirestoreService.subscribeToRoomChatMessages(roomId, (newMessages) => {
-      setMessages(newMessages);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [roomId]);
-
-  const sendMessage = async (content: string, senderId: string, senderName: string, senderAvatar?: string, type: 'text' | 'image' | 'file' | 'video' = 'text', attachment?: any) => {
-    try {
-      await FirestoreService.sendChatMessage({
-        roomId,
-        senderId,
-        senderName,
-        senderAvatar,
-        content,
-        type,
-        attachment
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-    }
-  };
-
-  const addReaction = async (messageId: string, emoji: string, userId: string) => {
-    try {
-      await FirestoreService.addReactionToMessage(messageId, emoji, userId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add reaction');
-    }
-  };
-
-  return { messages, loading, error, sendMessage, addReaction };
-};
-
 // Enhanced Pod Posts Hook
 export const useEnhancedPodPosts = (podId: string) => {
   const [posts, setPosts] = useState<any[]>([]);

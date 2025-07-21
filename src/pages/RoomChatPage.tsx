@@ -164,7 +164,6 @@ const RoomChatPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <ThemeToggle />
               <motion.button
                 onClick={handleLogout}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -177,7 +176,7 @@ const RoomChatPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Chat Interface */}
+      {/* Real-time Chat Interface */}
       <div className="container mx-auto px-6 py-6 h-[calc(100vh-88px)]">
         <ChatInterface
           roomName={room.name}

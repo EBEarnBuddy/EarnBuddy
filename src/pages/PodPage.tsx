@@ -304,20 +304,19 @@ const PodPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Chat Interface */}
+      {/* Main Pod Feed */}
       <div className="h-[calc(100vh-88px)]">
-        <PodChat 
+        <PodFeed 
           pod={{
             id: pod.id!,
             name: pod.name,
-            description: pod.description,
-            members: pod.members,
-            onlineMembers: pod.onlineMembers || [],
-            theme: pod.theme,
-            icon: pod.icon,
-            messageCount: pod.messageCount,
-            pinnedMessages: pod.pinnedMessages
+            theme: pod.theme
           }}
+          posts={posts}
+          loading={postsLoading}
+          onCreatePost={handleCreatePost}
+          onLikePost={handleLikePost}
+          onBookmarkPost={handleBookmarkPost}
         />
       </div>
     </div>
