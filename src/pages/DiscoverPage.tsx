@@ -410,16 +410,16 @@ const DiscoverPage: React.FC = () => {
         >
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}! 
-            {userProfile?.onboardingData?.role && (
+            {userProfile?.onboardingData?.role && typeof userProfile.onboardingData.role === 'string' && (
               <span className="text-emerald-600 dark:text-emerald-400"> 
                 ({userProfile.onboardingData.role.charAt(0).toUpperCase() + userProfile.onboardingData.role.slice(1)})
               </span>
             )} 👋
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            {userProfile?.onboardingData?.role === 'freelancer' 
+            {typeof userProfile?.onboardingData?.role === 'string' && userProfile.onboardingData.role === 'freelancer' 
               ? "Here are the latest freelance opportunities matching your skills."
-              : userProfile?.onboardingData?.role === 'founder'
+              : typeof userProfile?.onboardingData?.role === 'string' && userProfile.onboardingData.role === 'founder'
               ? "Discover talented builders and grow your startup team."
               : "Here's what's happening in your builder network today."
             }
