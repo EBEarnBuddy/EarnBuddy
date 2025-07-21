@@ -16,7 +16,8 @@ import {
   arrayRemove, 
   increment,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -25,37 +26,57 @@ export interface Pod {
   id?: string;
   name: string;
   description: string;
-  category: string;
-  memberCount: number;
+  slug: string;
+  theme: string;
+  icon: string;
+  tags: string[];
+  category?: string;
+  memberCount?: number;
   members: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  isPrivate: boolean;
-  tags: string[];
-  avatar?: string;
   createdBy: string;
+  isPrivate?: boolean;
+  lastActivity?: Timestamp;
+  messageCount?: number;
+  onlineMembers?: string[];
+  pinnedMessages?: string[];
+  moderators?: string[];
 }
 
 export interface PodPost {
   id?: string;
   podId: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar?: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
   content: string;
-  type: 'text' | 'image' | 'link' | 'poll';
-  attachments?: any[];
+  type?: 'text' | 'image' | 'file' | 'system';
+  imageUrl?: string;
+  attachment?: {
+    url: string;
+    name: string;
+    type: string;
+    size: string;
+  };
   likes: string[];
-  comments: Comment[];
+  comments?: PodComment[];
+  bookmarks: string[];
+  reactions?: { [emoji: string]: string[] };
+  isPinned?: boolean;
+  isReported?: boolean;
+  reportedBy?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  editedAt?: Timestamp;
+  isEdited?: boolean;
 }
 
-export interface Comment {
+export interface PodComment {
   id: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar?: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
   content: string;
   createdAt: Timestamp;
   likes: string[];
@@ -173,6 +194,22 @@ export interface UserProfile {
   twitter?: string;
   onboardingCompleted: boolean;
   onboardingData?: OnboardingData;
+  joinedPods: string[];
+  joinedRooms: string[];
+  postedStartups: string[];
+  postedGigs: string[];
+  appliedGigs: string[];
+  appliedStartups: string[];
+  bookmarkedGigs: string[];
+  bookmarkedStartups: string[];
+  bookmarks: string[];
+  activityLog: any[];
+  rating: number;
+  completedProjects: number;
+  totalEarnings: string;
+  badges?: string[];
+  isOnline?: boolean;
+  lastSeen?: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -215,12 +252,48 @@ export interface Recommendation {
 
 // Firestore Service Class
 export class FirestoreService {
+  // User Profiles
+  static async createUserProfile(profileData: Omit<UserProfile, 'id' | 'joinDate'>): Promise<void> {
+    await setDoc(doc(db, 'users', profileData.uid), {
+      ...profileData,
+      joinDate: serverTimestamp(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+
+  static async getUserProfile(userId: string): Promise<UserProfile | null> {
+    const docSnap = await getDoc(doc(db, 'users', userId));
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as UserProfile : null;
+  }
+
+  static async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    await updateDoc(doc(db, 'users', userId), {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async updateUserOnlineStatus(userId: string, isOnline: boolean): Promise<void> {
+    await updateDoc(doc(db, 'users', userId), {
+      isOnline,
+      lastSeen: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  }
+
   // Pods
   static async createPod(podData: Omit<Pod, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     const docRef = await addDoc(collection(db, 'pods'), {
       ...podData,
+      memberCount: podData.members?.length || 0,
+      messageCount: 0,
+      onlineMembers: [],
+      pinnedMessages: [],
+      moderators: [podData.createdBy],
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      lastActivity: serverTimestamp()
     });
     return docRef.id;
   }
@@ -233,26 +306,101 @@ export class FirestoreService {
   }
 
   static async joinPod(podId: string, userId: string): Promise<void> {
+    const batch = writeBatch(db);
+    
+    // Update pod
     const podRef = doc(db, 'pods', podId);
-    await updateDoc(podRef, {
+    batch.update(podRef, {
       members: arrayUnion(userId),
       memberCount: increment(1),
+      updatedAt: serverTimestamp(),
+      lastActivity: serverTimestamp()
+    });
+    
+    // Update user profile
+    const userRef = doc(db, 'users', userId);
+    batch.update(userRef, {
+      joinedPods: arrayUnion(podId),
       updatedAt: serverTimestamp()
     });
+    
+    await batch.commit();
   }
 
   static async leavePod(podId: string, userId: string): Promise<void> {
+    const batch = writeBatch(db);
+    
+    // Update pod
     const podRef = doc(db, 'pods', podId);
-    await updateDoc(podRef, {
+    batch.update(podRef, {
       members: arrayRemove(userId),
       memberCount: increment(-1),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Update user profile
+    const userRef = doc(db, 'users', userId);
+    batch.update(userRef, {
+      joinedPods: arrayRemove(podId),
+      updatedAt: serverTimestamp()
+    });
+    
+    await batch.commit();
+  }
+
+  static async updatePodOnlineMembers(podId: string, onlineMembers: string[]): Promise<void> {
+    const podRef = doc(db, 'pods', podId);
+    await updateDoc(podRef, {
+      onlineMembers,
       updatedAt: serverTimestamp()
     });
   }
 
   // Pod Posts
-  static async createPodPost(postData: Omit<PodPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'podPosts'), {
+  static async createPodPost(podId: string, userId: string, content: string, imageUrl?: string): Promise<string> {
+    // Get user profile for name and avatar
+    const userProfile = await this.getUserProfile(userId);
+    
+    const postData = {
+      podId,
+      userId,
+      userName: userProfile?.displayName || 'Anonymous User',
+      userAvatar: userProfile?.photoURL || '',
+      content: content.trim(),
+      type: imageUrl ? 'image' : 'text',
+      imageUrl,
+      likes: [],
+      comments: [],
+      bookmarks: [],
+      reactions: {},
+      isPinned: false,
+      isReported: false,
+      reportedBy: [],
+      isEdited: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const batch = writeBatch(db);
+    
+    // Create post
+    const postRef = doc(collection(db, 'podPosts'));
+    batch.set(postRef, postData);
+    
+    // Update pod activity
+    const podRef = doc(db, 'pods', podId);
+    batch.update(podRef, {
+      messageCount: increment(1),
+      lastActivity: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    await batch.commit();
+    return postRef.id;
+  }
+
+  static async createPost(postData: Omit<PodPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'posts'), {
       ...postData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -271,7 +419,7 @@ export class FirestoreService {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PodPost));
   }
 
-  static async likePodPost(postId: string, userId: string): Promise<void> {
+  static async likePost(postId: string, userId: string): Promise<void> {
     const postRef = doc(db, 'podPosts', postId);
     await updateDoc(postRef, {
       likes: arrayUnion(userId),
@@ -279,117 +427,257 @@ export class FirestoreService {
     });
   }
 
-  // Gigs
-  static async createGig(gigData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'gigs'), {
-      ...gigData,
-      createdAt: serverTimestamp(),
+  static async unlikePost(postId: string, userId: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    await updateDoc(postRef, {
+      likes: arrayRemove(userId),
       updatedAt: serverTimestamp()
     });
-    return docRef.id;
   }
 
-  static async getGigs(): Promise<Gig[]> {
-    const querySnapshot = await getDocs(
-      query(collection(db, 'gigs'), orderBy('createdAt', 'desc'))
+  static async bookmarkPost(postId: string, userId: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    await updateDoc(postRef, {
+      bookmarks: arrayUnion(userId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async addReactionToPost(postId: string, emoji: string, userId: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    const postDoc = await getDoc(postRef);
+    
+    if (postDoc.exists()) {
+      const data = postDoc.data() as PodPost;
+      const reactions = data.reactions || {};
+      
+      if (!reactions[emoji]) {
+        reactions[emoji] = [];
+      }
+      
+      if (!reactions[emoji].includes(userId)) {
+        reactions[emoji].push(userId);
+      } else {
+        reactions[emoji] = reactions[emoji].filter(id => id !== userId);
+        if (reactions[emoji].length === 0) {
+          delete reactions[emoji];
+        }
+      }
+      
+      await updateDoc(postRef, { 
+        reactions,
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
+
+  static async pinPost(postId: string, podId: string): Promise<void> {
+    const batch = writeBatch(db);
+    
+    // Update post
+    const postRef = doc(db, 'podPosts', postId);
+    batch.update(postRef, {
+      isPinned: true,
+      updatedAt: serverTimestamp()
+    });
+    
+    // Update pod
+    const podRef = doc(db, 'pods', podId);
+    batch.update(podRef, {
+      pinnedMessages: arrayUnion(postId),
+      updatedAt: serverTimestamp()
+    });
+    
+    await batch.commit();
+  }
+
+  static async reportPost(postId: string, userId: string, reason: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    await updateDoc(postRef, {
+      isReported: true,
+      reportedBy: arrayUnion(userId),
+      updatedAt: serverTimestamp()
+    });
+    
+    // Create report record
+    await addDoc(collection(db, 'reports'), {
+      postId,
+      reportedBy: userId,
+      reason,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+  }
+
+  // Real-time subscriptions
+  static subscribeToPodPosts(
+    podId: string,
+    callback: (posts: PodPost[]) => void
+  ): () => void {
+    try {
+      const q = query(
+        collection(db, 'podPosts'),
+        where('podId', '==', podId),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+
+      return onSnapshot(q, (snapshot) => {
+        const posts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as PodPost));
+        callback(posts);
+      }, (error) => {
+        console.error('Error in pod posts subscription:', error);
+        if (error.code === 'failed-precondition') {
+          // Fallback without orderBy
+          const simpleQ = query(
+            collection(db, 'podPosts'),
+            where('podId', '==', podId),
+            limit(50)
+          );
+          
+          return onSnapshot(simpleQ, (snapshot) => {
+            const posts = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            } as PodPost));
+            posts.sort((a, b) => {
+              const aTime = a.createdAt?.seconds || 0;
+              const bTime = b.createdAt?.seconds || 0;
+              return bTime - aTime;
+            });
+            callback(posts);
+          });
+        }
+        throw error;
+      });
+    } catch (error) {
+      console.error('Error setting up pod posts subscription:', error);
+      throw error;
+    }
+  }
+
+  static subscribeToUserNotifications(
+    userId: string,
+    callback: (notifications: any[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(20)
     );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gig));
-  }
-
-  static async applyToGig(gigId: string, application: Omit<GigApplication, 'appliedAt' | 'status'>): Promise<void> {
-    const gigRef = doc(db, 'gigs', gigId);
-    await updateDoc(gigRef, {
-      applicants: arrayUnion({
-        ...application,
-        appliedAt: serverTimestamp(),
-        status: 'pending'
-      }),
-      updatedAt: serverTimestamp()
+    
+    return onSnapshot(q, (snapshot) => {
+      const notifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      callback(notifications);
     });
   }
 
-  // Startups
-  static async createStartup(startupData: Omit<Startup, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'startups'), {
-      ...startupData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return docRef.id;
-  }
-
-  static async getStartups(): Promise<Startup[]> {
-    const querySnapshot = await getDocs(
-      query(collection(db, 'startups'), orderBy('createdAt', 'desc'))
-    );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
-  }
-
-  static async applyToStartup(startupId: string, application: Omit<StartupApplication, 'appliedAt' | 'status'>): Promise<void> {
-    const startupRef = doc(db, 'startups', startupId);
-    await updateDoc(startupRef, {
-      applicants: arrayUnion({
-        ...application,
-        appliedAt: serverTimestamp(),
-        status: 'pending'
-      }),
-      updatedAt: serverTimestamp()
+  static async markNotificationAsRead(notificationId: string): Promise<void> {
+    const notificationRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notificationRef, {
+      seen: true,
+      readAt: serverTimestamp()
     });
   }
 
-  // Chat Rooms
-  static async createChatRoom(roomData: Omit<ChatRoom, 'id' | 'createdAt' | 'lastActivity'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'chatRooms'), {
+  // Rooms
+  static async createRoom(roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'rooms'), {
       ...roomData,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
     return docRef.id;
   }
 
-  static async getChatRooms(): Promise<ChatRoom[]> {
+  static async getRooms(userId: string): Promise<Room[]> {
     const querySnapshot = await getDocs(
-      query(collection(db, 'chatRooms'), orderBy('lastActivity', 'desc'))
+      query(
+        collection(db, 'rooms'),
+        where('members', 'array-contains', userId),
+        orderBy('lastActivity', 'desc')
+      )
     );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
   }
 
-  static async joinChatRoom(roomId: string, userId: string): Promise<void> {
-    const roomRef = doc(db, 'chatRooms', roomId);
+  static async joinRoom(roomId: string, userId: string): Promise<void> {
+    const roomRef = doc(db, 'rooms', roomId);
     await updateDoc(roomRef, {
       members: arrayUnion(userId),
+      updatedAt: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
   }
 
-  // Chat Messages
-  static async sendMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'chatMessages'), {
+  // Messages
+  static async sendMessage(messageData: Omit<Message, 'id' | 'timestamp'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'messages'), {
       ...messageData,
       timestamp: serverTimestamp()
     });
-
-    // Update room's last activity
-    const roomRef = doc(db, 'chatRooms', messageData.roomId);
-    await updateDoc(roomRef, {
-      lastActivity: serverTimestamp()
-    });
-
     return docRef.id;
   }
 
-  static async getChatMessages(roomId: string): Promise<ChatMessage[]> {
-    const querySnapshot = await getDocs(
-      query(
-        collection(db, 'chatMessages'),
-        where('roomId', '==', roomId),
-        orderBy('timestamp', 'asc')
-      )
+  static subscribeToRoomMessages(
+    roomId: string,
+    callback: (messages: Message[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'messages'),
+      where('roomId', '==', roomId),
+      orderBy('timestamp', 'asc'),
+      limit(100)
     );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+    
+    return onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Message));
+      callback(messages);
+    });
   }
 
-  static async addReaction(messageId: string, emoji: string, userId: string): Promise<void> {
+  // Chat Messages for Pods
+  static async sendChatMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'chatMessages'), {
+      ...messageData,
+      reactions: {},
+      timestamp: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static subscribeToRoomChatMessages(
+    roomId: string,
+    callback: (messages: ChatMessage[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'chatMessages'),
+      where('roomId', '==', roomId),
+      orderBy('timestamp', 'asc'),
+      limit(100)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as ChatMessage));
+      callback(messages);
+    });
+  }
+
+  static async addReactionToMessage(messageId: string, emoji: string, userId: string): Promise<void> {
     const messageRef = doc(db, 'chatMessages', messageId);
     const messageDoc = await getDoc(messageRef);
     
@@ -414,34 +702,120 @@ export class FirestoreService {
     }
   }
 
-  // User Profiles
-  static async createUserProfile(profileData: UserProfile): Promise<void> {
-    await setDoc(doc(db, 'userProfiles', profileData.uid), {
-      ...profileData,
+  // Gigs
+  static async createGig(gigData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'gigs'), {
+      ...gigData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    }, { merge: true });
+    });
+    return docRef.id;
   }
 
-  static async getUserProfile(userId: string): Promise<UserProfile | null> {
-    const docSnap = await getDoc(doc(db, 'userProfiles', userId));
-    return docSnap.exists() ? { ...docSnap.data() } as UserProfile : null;
+  static async getGigs(): Promise<Gig[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'gigs'), orderBy('createdAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gig));
   }
 
-  static async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
-    await updateDoc(doc(db, 'userProfiles', userId), {
-      ...updates,
+  static async applyToGig(gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
+    const gigRef = doc(db, 'gigs', gigId);
+    const userProfile = await this.getUserProfile(userId);
+    
+    await updateDoc(gigRef, {
+      applicants: arrayUnion({
+        userId,
+        userName: userProfile?.displayName || 'Anonymous User',
+        userAvatar: userProfile?.photoURL || '',
+        coverLetter: applicationData?.coverLetter || '',
+        portfolio: applicationData?.portfolio || '',
+        appliedAt: serverTimestamp(),
+        status: 'pending'
+      }),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async bookmarkGig(gigId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedGigs: arrayUnion(gigId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async unbookmarkGig(gigId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedGigs: arrayRemove(gigId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Startups
+  static async createStartup(startupData: Omit<Startup, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'startups'), {
+      ...startupData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getStartups(): Promise<Startup[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'startups'), orderBy('createdAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
+  }
+
+  static async applyToStartup(startupId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
+    const startupRef = doc(db, 'startups', startupId);
+    const userProfile = await this.getUserProfile(userId);
+    
+    await updateDoc(startupRef, {
+      applicants: arrayUnion({
+        userId,
+        userName: userProfile?.displayName || 'Anonymous User',
+        userAvatar: userProfile?.photoURL || '',
+        coverLetter: applicationData?.coverLetter || '',
+        portfolio: applicationData?.portfolio || '',
+        appliedAt: serverTimestamp(),
+        status: 'pending'
+      }),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async bookmarkStartup(startupId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedStartups: arrayUnion(startupId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async unbookmarkStartup(startupId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedStartups: arrayRemove(startupId),
       updatedAt: serverTimestamp()
     });
   }
 
   // Onboarding
-  static async saveOnboardingResponse(userId: string, onboardingData: OnboardingData): Promise<void> {
-    await updateDoc(doc(db, 'userProfiles', userId), {
+  static async saveOnboardingResponse(onboardingData: any): Promise<void> {
+    await updateDoc(doc(db, 'users', onboardingData.userId), {
       onboardingData,
       onboardingCompleted: true,
       updatedAt: serverTimestamp()
     });
+  }
+
+  static async getOnboardingResponse(userId: string): Promise<any | null> {
+    const userProfile = await this.getUserProfile(userId);
+    return userProfile?.onboardingData || null;
   }
 
   // Analytics
@@ -450,164 +824,9 @@ export class FirestoreService {
     return docSnap.exists() ? { ...docSnap.data() } as UserAnalytics : null;
   }
 
-  static async updateUserAnalytics(userId: string, updates: Partial<UserAnalytics>): Promise<void> {
-    const analyticsRef = doc(db, 'userAnalytics', userId);
-    const docSnap = await getDoc(analyticsRef);
-    
-    if (docSnap.exists()) {
-      await updateDoc(analyticsRef, {
-        ...updates,
-        updatedAt: serverTimestamp()
-      });
-    } else {
-      await updateDoc(analyticsRef, {
-        userId,
-        profileViews: 0,
-        postsCreated: 0,
-        messagesPosted: 0,
-        podsJoined: 0,
-        gigsApplied: 0,
-        startupsApplied: 0,
-        completedProjects: 0,
-        earnings: 0,
-        ...updates,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-    }
-  }
-
   // Recommendations
-  static async getRecommendations(userId: string): Promise<Recommendation | null> {
+  static async getPersonalizedRecommendations(userId: string): Promise<Recommendation | null> {
     const docSnap = await getDoc(doc(db, 'recommendations', userId));
     return docSnap.exists() ? { ...docSnap.data() } as Recommendation : null;
-  }
-
-  static async generateRecommendations(userId: string, userProfile: UserProfile): Promise<void> {
-    // Get all data
-    const [gigs, startups, pods] = await Promise.all([
-      this.getGigs(),
-      this.getStartups(),
-      this.getPods()
-    ]);
-
-    // Simple recommendation algorithm based on user's onboarding data
-    const userSkills = userProfile.onboardingData?.skills || [];
-    const userInterests = userProfile.onboardingData?.interests || [];
-    const userRole = userProfile.onboardingData?.role;
-
-    // Recommend gigs based on skills
-    const recommendedGigs = gigs.filter(gig => 
-      gig.skills.some(skill => userSkills.includes(skill)) ||
-      userInterests.some(interest => gig.category.toLowerCase().includes(interest.toLowerCase()))
-    ).slice(0, 5);
-
-    // Recommend startups based on interests and role
-    const recommendedStartups = startups.filter(startup =>
-      userInterests.some(interest => 
-        startup.industry.toLowerCase().includes(interest.toLowerCase()) ||
-        startup.description.toLowerCase().includes(interest.toLowerCase())
-      ) || (userRole === 'founder' && startup.stage === 'pre-seed')
-    ).slice(0, 5);
-
-    // Recommend pods based on interests
-    const recommendedPods = pods.filter(pod =>
-      userInterests.some(interest =>
-        pod.category.toLowerCase().includes(interest.toLowerCase()) ||
-        pod.name.toLowerCase().includes(interest.toLowerCase()) ||
-        pod.tags.some(tag => tag.toLowerCase().includes(interest.toLowerCase()))
-      )
-    ).slice(0, 5);
-
-    // Save recommendations
-    await updateDoc(doc(db, 'recommendations', userId), {
-      userId,
-      recommendedGigs,
-      recommendedStartups,
-      recommendedPods,
-      recommendedUsers: [], // TODO: Implement user recommendations
-      lastUpdated: serverTimestamp()
-    });
-  }
-
-  // Real-time listeners
-  static subscribeToCollection(
-    collectionName: string,
-    callback: (data: any[]) => void,
-    queryConstraints: any[] = []
-  ): () => void {
-    const q = query(collection(db, collectionName), ...queryConstraints);
-    return onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      callback(data);
-    });
-  }
-
-  static subscribeToChatMessages(
-    roomId: string,
-    callback: (messages: ChatMessage[]) => void
-  ): () => void {
-    const q = query(
-      collection(db, 'chatMessages'),
-      where('roomId', '==', roomId),
-      orderBy('timestamp', 'asc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const messages = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      } as ChatMessage));
-      callback(messages);
-    });
-  }
-
-  static subscribeToPodPosts(
-    podId: string,
-    callback: (posts: PodPost[]) => void
-  ): () => void {
-    try {
-      // First try with orderBy, fallback to simple query if index doesn't exist
-      const q = query(
-        collection(db, 'podPosts'),
-        where('podId', '==', podId),
-        orderBy('createdAt', 'desc')
-      );
-
-      return onSnapshot(q, (snapshot) => {
-        const posts = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date()
-        } as PodPost));
-        callback(posts);
-      }, (error) => {
-        console.error('Error in pod posts subscription:', error);
-        // Fallback to simple query without orderBy if index doesn't exist
-        if (error.code === 'failed-precondition') {
-          const simpleQ = query(
-            collection(db, 'podPosts'),
-            where('podId', '==', podId)
-          );
-          
-          return onSnapshot(simpleQ, (snapshot) => {
-            const posts = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-              createdAt: doc.data().createdAt?.toDate() || new Date(),
-              updatedAt: doc.data().updatedAt?.toDate() || new Date()
-            } as PodPost));
-            // Sort manually since we can't use orderBy
-            posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            callback(posts);
-          });
-        }
-        throw error;
-      });
-    } catch (error) {
-      console.error('Error setting up pod posts subscription:', error);
-      throw error;
-    }
   }
 }

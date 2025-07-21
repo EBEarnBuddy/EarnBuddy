@@ -72,7 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           activityLog: [],
           rating: 0,
           completedProjects: 0,
-          totalEarnings: '$0'
+          totalEarnings: '$0',
+          badges: [],
+          isOnline: true,
+          createdAt: new Date() as any,
+          updatedAt: new Date() as any
         };
 
         await FirestoreService.createUserProfile(newProfile);
@@ -80,8 +84,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch the created profile
         const createdProfile = await FirestoreService.getUserProfile(user.uid);
         setUserProfile(createdProfile);
+        
+        // Set user as online
+        await FirestoreService.updateUserOnlineStatus(user.uid, true);
       } else {
         setUserProfile(existingProfile);
+        // Update online status
+        await FirestoreService.updateUserOnlineStatus(user.uid, true);
       }
     } catch (error) {
       console.error('Error creating/fetching user profile:', error);
@@ -161,6 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
+      // Set user as offline before signing out
+      if (currentUser) {
+        await FirestoreService.updateUserOnlineStatus(currentUser.uid, false);
+      }
       await signOut(auth);
       setUserProfile(null);
     } catch (error) {

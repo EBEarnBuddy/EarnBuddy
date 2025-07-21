@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FirestoreService, Pod, Post, Room, Message, Startup, FreelanceGig, Notification, ChatMessage, OnboardingResponse } from '../lib/firestore';
+import { FirestoreService, Pod, PodPost, Room, Message, Startup, FreelanceGig, Notification, ChatMessage } from '../lib/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 // Custom hooks for Firestore operations
@@ -63,7 +63,7 @@ export const usePods = () => {
 };
 
 export const usePodPosts = (podId: string) => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PodPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,15 +87,7 @@ export const usePodPosts = (podId: string) => {
 
   const createPost = async (content: string, userId: string, imageUrl?: string) => {
     try {
-      await FirestoreService.createPost({
-        podId,
-        userId,
-        content,
-        imageUrl,
-        likes: [],
-        replies: [],
-        bookmarks: []
-      });
+      await FirestoreService.createPodPost(podId, userId, content, imageUrl);
       // Refresh posts
       const updatedPosts = await FirestoreService.getPodPosts(podId);
       setPosts(updatedPosts);
@@ -501,7 +493,7 @@ export const useOnboarding = () => {
     }
   };
 
-  const getOnboardingResponse = async (userId: string): Promise<OnboardingResponse | null> => {
+  const getOnboardingResponse = async (userId: string): Promise<any | null> => {
     try {
       return await FirestoreService.getOnboardingResponse(userId);
     } catch (err) {

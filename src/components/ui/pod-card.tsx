@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, Zap } from 'lucide-react';
+import { Users, TrendingUp, Zap, MessageCircle, Clock, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PodCardProps {
@@ -14,6 +14,9 @@ interface PodCardProps {
     icon: React.ComponentType<any>;
     isJoined: boolean;
     trending?: boolean;
+    messageCount?: number;
+    onlineMembers?: number;
+    lastActivity?: string;
   };
   onJoin: (podId: string) => void;
   onEnter: (podId: string) => void;
@@ -50,7 +53,7 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
           transition={{ type: "spring", stiffness: 400 }}
         >
           <pod.icon className="w-8 h-8 text-white relative z-10" />
-          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            {pod.isJoined ? 'Open Chat' : 'Join Pod'}
         </motion.div>
 
         {/* Content */}
@@ -94,9 +97,15 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
                 className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500"
                 initial={{ x: "-100%" }}
                 whileHover={{ x: "0%" }}
-                transition={{ duration: 0.3 }}
-              />
-            )}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1 text-gray-500">
+              <MessageCircle className="w-3 h-3" />
+              <span>{pod.messageCount || 0}</span>
+            </div>
+            <div className="flex items-center gap-1 text-green-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>{pod.onlineMembers || 0}</span>
+            </div>
           </motion.button>
         </div>
 
@@ -105,6 +114,11 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
           <div className={`w-full h-full bg-gradient-to-br ${pod.gradient} rounded-full transform translate-x-8 -translate-y-8`} />
         </div>
       </div>
+      
+      {/* Activity Indicator */}
+      {pod.isJoined && pod.messageCount && pod.messageCount > 0 && (
+        <div className="absolute -top-2 -right-2 w-4 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
+      )}
     </motion.div>
   );
 };

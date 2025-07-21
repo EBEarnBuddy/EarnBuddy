@@ -492,7 +492,9 @@ const DiscoverPage: React.FC = () => {
                     <h3 className="font-bold text-lg mb-1">{action.title}</h3>
                     <p className="text-sm opacity-90">{action.description}</p>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-white/20 rounded-full animate-ping"></div>
+                  {action.path === '/community' && (
+                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-white/20 rounded-full animate-ping"></div>
+                  )}
                 </div>
               </motion.div>
             ))}

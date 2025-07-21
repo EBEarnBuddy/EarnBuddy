@@ -15,13 +15,19 @@ import {
   Palette,
   ArrowLeft,
   Star,
-  MessageCircle
+  MessageCircle,
+  Hash,
+  Eye,
+  Clock,
+  UserPlus,
+  Settings,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods } from '../hooks/useFirestore';
 import { PodCard } from '../components/ui/pod-card';
 import { Skeleton } from '../components/ui/skeleton';
-import ThemeToggle from '../components/ThemeToggle';
 
 const CommunityPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -30,6 +36,8 @@ const CommunityPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'members'>('recent');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const categories = [
     { id: 'all', name: 'All Pods', icon: Globe },
@@ -58,8 +66,21 @@ const CommunityPage: React.FC = () => {
                          pod.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || 
                            pod.slug.includes(selectedCategory) ||
-                           pod.name.toLowerCase().includes(selectedCategory);
+                           pod.name.toLowerCase().includes(selectedCategory) ||
+                           pod.tags?.some(tag => tag.toLowerCase().includes(selectedCategory));
     return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'popular':
+        return (b.messageCount || 0) - (a.messageCount || 0);
+      case 'members':
+        return (b.memberCount || b.members.length) - (a.memberCount || a.members.length);
+      case 'recent':
+      default:
+        const aTime = a.lastActivity?.seconds || a.updatedAt?.seconds || 0;
+        const bTime = b.lastActivity?.seconds || b.updatedAt?.seconds || 0;
+        return bTime - aTime;
+    }
   });
 
   const handleJoinPod = async (podId: string) => {
@@ -107,7 +128,14 @@ const CommunityPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <ThemeToggle />
+              <motion.button
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors relative"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full"></span>
+              </motion.button>
+              
               <motion.button
                 onClick={handleLogout}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -124,7 +152,7 @@ const CommunityPage: React.FC = () => {
         {/* Search and Filters */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-6">
-            <div className="flex-1 max-w-md">
+            <div className="flex-1 max-w-lg">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -137,6 +165,42 @@ const CommunityPage: React.FC = () => {
               </div>
             </div>
 
+            <div className="flex items-center gap-3">
+              {/* Sort Options */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+              >
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Active</option>
+                <option value="members">Most Members</option>
+              </select>
+
+              {/* View Mode Toggle */}
+              <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3 py-2 text-sm transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Grid
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 py-2 text-sm transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  List
+                </button>
+              </div>
+            </div>
             <motion.button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
@@ -174,9 +238,11 @@ const CommunityPage: React.FC = () => {
 
         {/* Pods Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <div key={i} className={`bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 ${
+                viewMode === 'list' ? 'flex items-center gap-6' : ''
+              }`}>
                 <Skeleton className="w-16 h-16 rounded-xl mb-4" />
                 <Skeleton className="h-6 w-3/4 mb-2" />
                 <Skeleton className="h-4 w-full mb-4" />
@@ -189,11 +255,15 @@ const CommunityPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
             <AnimatePresence>
               {filteredPods.map((pod, index) => {
                 const isJoined = currentUser ? pod.members.includes(currentUser.uid) : false;
                 const PodIcon = getIconForPod(pod.icon);
+                const lastActivity = pod.lastActivity?.seconds 
+                  ? new Date(pod.lastActivity.seconds * 1000)
+                  : new Date();
+                const isActive = Date.now() - lastActivity.getTime() < 24 * 60 * 60 * 1000; // Active in last 24h
                 
                 return (
                   <motion.div
@@ -202,22 +272,93 @@ const CommunityPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className={viewMode === 'list' ? 'w-full' : ''}
                   >
-                    <PodCard
-                      pod={{
-                        id: pod.id!,
-                        name: pod.name,
-                        description: pod.description,
-                        members: pod.memberCount || pod.members.length,
-                        growth: '+23%', // This would be calculated from real data
-                        gradient: pod.theme,
-                        icon: PodIcon,
-                        isJoined,
-                        trending: index < 2 // Mark first 2 as trending
-                      }}
-                      onJoin={handleJoinPod}
-                      onEnter={handleEnterPod}
-                    />
+                    {viewMode === 'grid' ? (
+                      <PodCard
+                        pod={{
+                          id: pod.id!,
+                          name: pod.name,
+                          description: pod.description,
+                          members: pod.memberCount || pod.members.length,
+                          growth: '+23%',
+                          gradient: pod.theme,
+                          icon: PodIcon,
+                          isJoined,
+                          trending: isActive && index < 2
+                        }}
+                        onJoin={handleJoinPod}
+                        onEnter={handleEnterPod}
+                      />
+                    ) : (
+                      <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-6">
+                          <div className={`w-16 h-16 bg-gradient-to-br ${pod.theme} rounded-2xl flex items-center justify-center relative`}>
+                            <PodIcon className="w-8 h-8 text-white" />
+                            {isActive && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {pod.name}
+                              </h3>
+                              {pod.tags && pod.tags.length > 0 && (
+                                <div className="flex gap-1">
+                                  {pod.tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                              {pod.description}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                <span>{pod.memberCount || pod.members.length} members</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MessageCircle className="w-4 h-4" />
+                                <span>{pod.messageCount || 0} messages</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{isActive ? 'Active today' : 'Quiet'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2">
+                            <motion.button
+                              onClick={() => isJoined ? handleEnterPod(pod.id!) : handleJoinPod(pod.id!)}
+                              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                                isJoined
+                                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-lg'
+                                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                              }`}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              {isJoined ? 'Enter' : 'Join'}
+                            </motion.button>
+                            {isJoined && (
+                              <motion.button
+                                className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                              >
+                                <BellOff className="w-3 h-3" />
+                              </motion.button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -277,8 +418,10 @@ const CreatePodForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     name: '',
     description: '',
     category: '',
-    isPrivate: false
+    isPrivate: false,
+    tags: [] as string[]
   });
+  const [currentTag, setCurrentTag] = useState('');
   const [loading, setLoading] = useState(false);
 
   const categories = [
@@ -302,11 +445,14 @@ const CreatePodForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         description: formData.description,
         theme: selectedCategory?.theme || 'from-gray-500 to-gray-600',
         icon: selectedCategory?.icon || 'Users',
+        tags: formData.tags,
         members: [currentUser.uid],
-        posts: [],
-        events: [],
-        pinnedResources: [],
-        isActive: true
+        createdBy: currentUser.uid,
+        isPrivate: formData.isPrivate,
+        messageCount: 0,
+        onlineMembers: [],
+        pinnedMessages: [],
+        moderators: [currentUser.uid]
       };
 
       await createPod(podData);
@@ -318,6 +464,16 @@ const CreatePodForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
+  const addTag = () => {
+    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
+      setFormData(prev => ({ ...prev, tags: [...prev.tags, currentTag.trim()] }));
+      setCurrentTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }));
+  };
   return (
     <form onSubmit={handleSubmit}>
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Pod</h3>
@@ -368,6 +524,58 @@ const CreatePodForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </select>
         </div>
       </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Tags
+          </label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={currentTag}
+              onChange={(e) => setCurrentTag(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+              placeholder="Add a tag"
+            />
+            <button
+              type="button"
+              onClick={addTag}
+              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.tags.map(tag => (
+              <span
+                key={tag}
+                className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs flex items-center gap-1"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="text-emerald-600 hover:text-emerald-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="isPrivate"
+            checked={formData.isPrivate}
+            onChange={(e) => setFormData(prev => ({ ...prev, isPrivate: e.target.checked }))}
+            className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+          />
+          <label htmlFor="isPrivate" className="text-sm text-gray-700 dark:text-gray-300">
+            Private pod (invite only)
+          </label>
+        </div>
 
       <div className="flex gap-3 mt-6">
         <button

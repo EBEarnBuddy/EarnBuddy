@@ -15,43 +15,30 @@ import {
   Smile,
   Hash,
   Settings,
-  UserPlus
+  UserPlus,
+  Bell,
+  BellOff,
+  Pin,
+  Flag,
+  Eye,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useEnhancedPodPosts } from '../hooks/useFirestore';
-import { PostCard } from '../components/ui/post-card';
-import { PodSidebar } from '../components/ui/pod-sidebar';
+import { PodChat } from '../components/ui/pod-chat';
 import { Skeleton } from '../components/ui/skeleton';
-import ThemeToggle from '../components/ThemeToggle';
 
 const PodPage: React.FC = () => {
   const { podId } = useParams<{ podId: string }>();
   const { currentUser, userProfile, logout } = useAuth();
   const { pods, loading: podsLoading } = usePods();
-  const { posts, loading: postsLoading, createPost } = useEnhancedPodPosts(podId || '');
   const navigate = useNavigate();
-  const [newPost, setNewPost] = useState('');
-  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showPodInfo, setShowPodInfo] = useState(false);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(true);
 
   const pod = pods.find(p => p.id === podId);
   const isJoined = currentUser && pod ? pod.members.includes(currentUser.uid) : false;
-
-  const handleCreatePost = async () => {
-    if (!newPost.trim() || !currentUser) return;
-    
-    try {
-      await createPost(newPost, currentUser.uid);
-      setNewPost('');
-      setShowCreatePost(false);
-    } catch (error) {
-      console.error('Error creating post:', error);
-    }
-  };
-
-  const handleLikePost = async (postId: string) => {
-    // TODO: Implement like functionality for enhanced posts
-    console.log('Like post:', postId);
-  };
 
   const handleLogout = async () => {
     try {
@@ -100,9 +87,33 @@ const PodPage: React.FC = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{pod.name}</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{pod.description}</p>
+          
+          {/* Pod Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {pod.memberCount || pod.members.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Members</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {pod.messageCount || 0}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Messages</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {pod.onlineMembers?.length || 0}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Online</div>
+            </div>
+          </div>
+          
           <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
             You need to join this pod to view its content.
           </p>
+          
           <div className="flex gap-4">
             <motion.button
               onClick={() => navigate('/community')}
@@ -112,7 +123,13 @@ const PodPage: React.FC = () => {
               Back
             </motion.button>
             <motion.button
-              onClick={() => navigate('/community')}
+              onClick={async () => {
+                if (currentUser) {
+                  await handleJoinPod(pod.id!);
+                  // Refresh the page to show the pod content
+                  window.location.reload();
+                }
+              }}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
               whileHover={{ scale: 1.05 }}
             >
@@ -146,12 +163,38 @@ const PodPage: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">{pod.name}</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{pod.memberCount || pod.members.length} members</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span>{pod.memberCount || pod.members.length} members</span>
+                    <span>•</span>
+                    <span>{pod.onlineMembers?.length || 0} online</span>
+                    <span>•</span>
+                    <span>{pod.messageCount || 0} messages</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
+              <motion.button
+                onClick={() => setIsNotificationEnabled(!isNotificationEnabled)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                {isNotificationEnabled ? (
+                  <Bell className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <BellOff className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                )}
+              </motion.button>
+              
+              <motion.button
+                onClick={() => setShowPodInfo(!showPodInfo)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Eye className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </motion.button>
+              
               <motion.button
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 whileHover={{ scale: 1.05 }}
@@ -164,7 +207,6 @@ const PodPage: React.FC = () => {
               >
                 <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </motion.button>
-              <ThemeToggle />
               <motion.button
                 onClick={handleLogout}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -177,131 +219,106 @@ const PodPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Main Content */}
-        <div className="flex-1 max-w-4xl mx-auto p-6">
-          {/* Create Post */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
-            <div className="flex items-start gap-4">
-              <img
-                src={userProfile?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
-                alt="Your avatar"
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div className="flex-1">
-                <textarea
-                  value={newPost}
-                  onChange={(e) => setNewPost(e.target.value)}
-                  placeholder={`What's happening in ${pod.name}?`}
-                  className="w-full p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
-                  rows={3}
-                />
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-2">
-                    <motion.button
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <ImageIcon className="w-5 h-5 text-gray-500" />
-                    </motion.button>
-                    <motion.button
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <Smile className="w-5 h-5 text-gray-500" />
-                    </motion.button>
+      {/* Pod Info Sidebar */}
+      <AnimatePresence>
+        {showPodInfo && (
+          <motion.div
+            className="fixed top-0 right-0 w-80 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 z-50 overflow-y-auto"
+            initial={{ x: 320 }}
+            animate={{ x: 0 }}
+            exit={{ x: 320 }}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Pod Info</h3>
+                <button
+                  onClick={() => setShowPodInfo(false)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Description</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                    {pod.description}
+                  </p>
+                </div>
+                
+                {pod.tags && pod.tags.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {pod.tags.map(tag => (
+                        <span key={tag} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <motion.button
-                    onClick={handleCreatePost}
-                    disabled={!newPost.trim()}
-                    className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    whileHover={{ scale: newPost.trim() ? 1.05 : 1 }}
-                    whileTap={{ scale: newPost.trim() ? 0.95 : 1 }}
-                  >
-                    <Send className="w-4 h-4" />
-                    Post
-                  </motion.button>
+                )}
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">Stats</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Members</span>
+                      <span className="font-medium">{pod.memberCount || pod.members.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Messages</span>
+                      <span className="font-medium">{pod.messageCount || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Online Now</span>
+                      <span className="font-medium text-green-600">{pod.onlineMembers?.length || 0}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">Recent Members</h4>
+                  <div className="space-y-2">
+                    {pod.members.slice(0, 5).map((memberId, index) => (
+                      <div key={memberId} className="flex items-center gap-2">
+                        <img
+                          src={`https://images.unsplash.com/photo-${1472099645785 + index}?w=24&h=24&fit=crop&crop=face`}
+                          alt="Member"
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Member {index + 1}
+                        </span>
+                        {pod.onlineMembers?.includes(memberId) && (
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* Posts Feed */}
-          <div className="space-y-6">
-            {postsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-start gap-4 mb-4">
-                    <Skeleton className="w-12 h-12 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-32 mb-2" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-20 w-full mb-4" />
-                  <div className="flex gap-6">
-                    <Skeleton className="h-8 w-16" />
-                    <Skeleton className="h-8 w-16" />
-                    <Skeleton className="h-8 w-16" />
-                  </div>
-                </div>
-              ))
-            ) : posts.length > 0 ? (
-              posts.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
-                  <PostCard
-                    post={{
-                      id: post.id!,
-                      user: {
-                        name: post.userName || 'Anonymous User',
-                        avatar: post.userAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-                        badge: 'Builder'
-                      },
-                      content: post.content,
-                      image: post.imageUrl,
-                      timestamp: post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : 'Just now',
-                      likes: post.likes.length,
-                      replies: post.comments?.length || 0,
-                      isLiked: currentUser ? post.likes.includes(currentUser.uid) : false
-                    }}
-                    onLike={handleLikePost}
-                    onReply={(postId) => console.log('Reply to:', postId)}
-                  />
-                </motion.div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No posts yet</h3>
-                <p className="text-gray-600 dark:text-gray-400">Be the first to start a conversation in this pod!</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="hidden lg:block">
-          <PodSidebar
-            pod={{
-              name: pod.name,
-              description: pod.description,
-              members: pod.memberCount || pod.members.length,
-              onlineMembers: Math.floor((pod.memberCount || pod.members.length) * 0.3)
-            }}
-            activeRooms={[
-              { id: '1', name: 'General Chat', members: 45, isActive: true },
-              { id: '2', name: 'Project Ideas', members: 23, isActive: true },
-              { id: '3', name: 'Resources', members: 67, isActive: false }
-            ]}
-            pinnedLinks={pod.pinnedResources || []}
-            onCreateRoom={() => console.log('Create room')}
-          />
-        </div>
+      {/* Main Chat Interface */}
+      <div className="h-[calc(100vh-88px)]">
+        <PodChat 
+          pod={{
+            id: pod.id!,
+            name: pod.name,
+            description: pod.description,
+            members: pod.members,
+            onlineMembers: pod.onlineMembers || [],
+            theme: pod.theme,
+            icon: pod.icon,
+            messageCount: pod.messageCount,
+            pinnedMessages: pod.pinnedMessages
+          }}
+        />
       </div>
     </div>
   );
