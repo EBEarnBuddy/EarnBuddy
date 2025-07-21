@@ -443,8 +443,8 @@ const FreelancePage: React.FC = () => {
                                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience)}`}>
                                         {role.experience.charAt(0).toUpperCase() + role.experience.slice(1)} Level
                                       </span>
-                                      <span className={`text-sm font-medium ${getPriorityColor(role.priority)}`}>
-                                        {role.priority.charAt(0).toUpperCase() + role.priority.slice(1)} Priority
+                                      <span className={`text-sm font-medium ${getPriorityColor(role.priority || 'medium')}`}>
+                                        {((role.priority || 'medium') as string).charAt(0).toUpperCase() + ((role.priority || 'medium') as string).slice(1)} Priority
                                       </span>
                                     </div>
                                   </div>
