@@ -13,6 +13,8 @@ import StartupsPage from './pages/StartupsPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import RoomsPage from './pages/RoomsPage.tsx';
 import RoomChatPage from './pages/RoomChatPage.tsx';
+import NotificationsPage from './pages/NotificationsPage.tsx';
+import SettingsPage from './pages/SettingsPage.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(

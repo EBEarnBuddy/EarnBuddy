@@ -8,7 +8,8 @@ import {
   ChevronDown, 
   User, 
   Settings, 
-  LogOut 
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,7 +23,8 @@ const DashboardNavbar: React.FC = () => {
     { name: 'Discover', path: '/discover' },
     { name: 'Freelance', path: '/freelance' },
     { name: 'Startups', path: '/startups' },
-    { name: 'Community', path: '/community' }
+    { name: 'Community', path: '/community' },
+    { name: 'Rooms', path: '/rooms' }
   ];
 
   const handleLogout = async () => {
@@ -44,10 +46,14 @@ const DashboardNavbar: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             {/* Logo */}
-            <div className="flex items-center gap-3">
+            <motion.div 
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => navigate('/discover')}
+              whileHover={{ scale: 1.05 }}
+            >
               <img src="/logofinal.png" alt="EarnBuddy" className="w-10 h-10" />
               <span className="text-2xl font-bold text-gray-900 dark:text-white">EarnBuddy</span>
-            </div>
+            </motion.div>
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center gap-1">
@@ -55,12 +61,13 @@ const DashboardNavbar: React.FC = () => {
                 <motion.button
                   key={item.name}
                   onClick={() => navigate(item.path)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                     isActivePage(item.path)
                       ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                   whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {item.name}
                 </motion.button>
@@ -69,30 +76,24 @@ const DashboardNavbar: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Analytics Button */}
-            <motion.button
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              whileHover={{ scale: 1.05 }}
-            >
-              <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-            </motion.button>
-
             {/* Video Call Button */}
             <motion.button
+              onClick={() => navigate('/rooms')}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               whileHover={{ scale: 1.05 }}
             >
               <Video className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             </motion.button>
 
-            {/* Notifications */}
+            {/* Messages Button */}
             <motion.button
+              onClick={() => navigate('/rooms')}
               className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               whileHover={{ scale: 1.05 }}
             >
-              <Bell className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
+              <MessageCircle className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-xs rounded-full flex items-center justify-center">
+                2
               </span>
             </motion.button>
 
@@ -100,49 +101,85 @@ const DashboardNavbar: React.FC = () => {
             <div className="relative">
               <motion.button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 whileHover={{ scale: 1.02 }}
               >
                 <img
                   src={userProfile?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
                   alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-emerald-500/20"
                 />
-                <div className="hidden sm:block text-left">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {userProfile?.displayName || currentUser?.displayName || 'User'}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Builder</p>
-                </div>
                 <ChevronDown className="w-4 h-4 text-gray-500" />
               </motion.button>
 
               <AnimatePresence>
                 {showProfileDropdown && (
                   <motion.div
-                    className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <motion.button
-                      onClick={() => {
-                        setShowProfileDropdown(false);
-                        navigate('/profile');
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      <User className="w-4 h-4" />
-                      Profile
-                    </motion.button>
-                    <motion.button
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      <Settings className="w-4 h-4" />
-                      Settings
-                    </motion.button>
+                    {/* User Info */}
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={userProfile?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
+                          alt="Profile"
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {userProfile?.displayName || currentUser?.displayName || 'User'}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {currentUser?.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      <motion.button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          navigate('/notifications');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        whileHover={{ x: 5 }}
+                      >
+                        <Bell className="w-4 h-4" />
+                        <span>Notifications</span>
+                        <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+                      </motion.button>
+                      
+                      <motion.button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          navigate('/profile');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        whileHover={{ x: 5 }}
+                      >
+                        <User className="w-4 h-4" />
+                        Profile & Analytics
+                      </motion.button>
+                      
+                      <motion.button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          navigate('/settings');
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        whileHover={{ x: 5 }}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </motion.button>
+                    </div>
+                    
                     <div className="border-t border-gray-200 dark:border-gray-700">
                       <motion.button
                         onClick={() => {

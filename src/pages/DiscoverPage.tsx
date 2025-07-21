@@ -259,21 +259,6 @@ const DiscoverPage: React.FC = () => {
       <DashboardNavbar />
 
       <div className="container mx-auto px-6 py-8">
-        {/* Analytics Dashboard */}
-        <AnimatePresence>
-          {showAnalytics && (
-            <motion.div
-              className="mb-8"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <AnalyticsDashboard />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Welcome Section */}
         <motion.div
           className="mb-8"
