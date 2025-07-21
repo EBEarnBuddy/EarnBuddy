@@ -352,6 +352,34 @@ export const seedSampleData = async () => {
     for (const room of rooms) {
       await FirestoreService.createRoom(room);
       console.log(`Created room: ${room.name}`);
+      
+      // Add some sample messages to each room
+      const roomId = await FirestoreService.createRoom(room);
+      
+      const sampleMessages = [
+        {
+          roomId: roomId,
+          senderId: 'sample-user-1',
+          senderName: 'Sarah Chen',
+          senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
+          content: `Welcome to ${room.name}! Let's start collaborating 🚀`,
+          type: 'text' as const,
+          reactions: {}
+        },
+        {
+          roomId: roomId,
+          senderId: 'sample-user-2',
+          senderName: 'Marcus Rodriguez',
+          senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
+          content: 'Great to be here! Looking forward to working together.',
+          type: 'text' as const,
+          reactions: {}
+        }
+      ];
+      
+      for (const message of sampleMessages) {
+        await FirestoreService.sendChatMessage(message);
+      }
     }
 
     console.log('Sample data seeding completed successfully!');

@@ -157,6 +157,8 @@ export interface ChatRoom {
   lastActivity: Timestamp;
   isPrivate: boolean;
   avatar?: string;
+  hasWhiteboard?: boolean;
+  hasVideoCall?: boolean;
   lastMessage?: {
     content: string;
     senderName: string;
