@@ -652,37 +652,7 @@ export class FirestoreService {
     });
   }
 
-  // Chat Messages for Pods
-  static async sendChatMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'chatMessages'), {
-      ...messageData,
-      reactions: {},
-      timestamp: serverTimestamp()
-    });
-    return docRef.id;
-  }
-
-  static subscribeToRoomChatMessages(
-    roomId: string,
-    callback: (messages: ChatMessage[]) => void
-  ): () => void {
-    const q = query(
-      collection(db, 'chatMessages'),
-      where('roomId', '==', roomId),
-      orderBy('timestamp', 'asc'),
-      limit(100)
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const messages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ChatMessage));
-      callback(messages);
-    });
-  }
-
-  static async addReactionToMessage(messageId: string, emoji: string, userId: string): Promise<void> {
+  static async addReactionToChatMessage(messageId: string, emoji: string, userId: string): Promise<void> {
     const messageRef = doc(db, 'chatMessages', messageId);
     const messageDoc = await getDoc(messageRef);
     
