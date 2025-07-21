@@ -283,30 +283,68 @@ export const seedSampleData = async () => {
     const rooms = [
       {
         name: 'React Developers',
-        description: 'Private room for React developers to share tips and collaborate on projects',
+        description: 'Collaborate on React projects, share code, and discuss best practices',
         members: ['sample-user-1'],
         createdBy: 'sample-user-1',
-        isPrivate: true,
+        isPrivate: false,
+        category: 'Development',
+        avatar: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop',
         messages: [],
-        lastMessage: null
+        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
       },
       {
-        name: 'Startup Founders Network',
-        description: 'Exclusive room for startup founders to discuss challenges and opportunities',
+        name: 'AI/ML Research Hub',
+        description: 'Discuss latest AI research, share models, and collaborate on ML projects',
         members: ['sample-user-2'],
         createdBy: 'sample-user-2',
-        isPrivate: true,
+        isPrivate: false,
+        category: 'AI/ML',
+        avatar: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop',
         messages: [],
-        lastMessage: null
+        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
       },
       {
-        name: 'Design Feedback Circle',
-        description: 'Get constructive feedback on your design work from fellow designers',
+        name: 'Startup Founders Lounge',
+        description: 'Connect with fellow founders, share experiences, and get advice',
         members: ['sample-user-3'],
         createdBy: 'sample-user-3',
         isPrivate: false,
+        category: 'Startup',
+        avatar: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=100&h=100&fit=crop',
         messages: [],
-        lastMessage: null
+        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Design Critique Studio',
+        description: 'Share your designs, get feedback, and collaborate on creative projects',
+        members: ['sample-user-1', 'sample-user-2'],
+        createdBy: 'sample-user-1',
+        isPrivate: false,
+        category: 'Design',
+        avatar: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=100&h=100&fit=crop',
+        messages: [],
+        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Product Strategy Room',
+        description: 'Discuss product roadmaps, user research, and growth strategies',
+        members: ['sample-user-2', 'sample-user-3'],
+        createdBy: 'sample-user-2',
+        isPrivate: false,
+        category: 'Product',
+        avatar: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=100&h=100&fit=crop',
+        messages: [],
+        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
       }
     ];
 
