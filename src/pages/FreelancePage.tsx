@@ -443,14 +443,9 @@ const FreelancePage: React.FC = () => {
                                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience)}`}>
                                         {role.experience.charAt(0).toUpperCase() + role.experience.slice(1)} Level
                                       </span>
-                                      {(() => {
-                                        const safePriority = (role.priority && typeof role.priority === 'string' && role.priority.trim()) ? role.priority : 'medium';
-                                        return (
-                                          <span className={`text-sm font-medium ${getPriorityColor(safePriority)}`}>
-                                            {safePriority.charAt(0).toUpperCase() + safePriority.slice(1)} Priority
-                                          </span>
-                                        );
-                                      })()}
+                                      <span className={`text-sm font-medium ${getPriorityColor(role.priority || 'medium')}`}>
+                                        {(role.priority || 'medium').charAt(0).toUpperCase() + (role.priority || 'medium').slice(1)} Priority
+                                      </span>
                                     </div>
                                   </div>
                                   {role.filled && (
@@ -468,7 +463,7 @@ const FreelancePage: React.FC = () => {
                                   <div>
                                     <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Key Skills</h5>
                                     <div className="flex flex-wrap gap-2">
-                                      {role.skills.filter(skill => skill).slice(0, 4).map((skill, skillIndex) => (
+                                      {role.skills.slice(0, 4).map((skill, skillIndex) => (
                                         <span
                                           key={skillIndex}
                                           className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm rounded-full"
@@ -476,9 +471,9 @@ const FreelancePage: React.FC = () => {
                                           {skill}
                                         </span>
                                       ))}
-                                      {role.skills.filter(skill => skill).length > 4 && (
+                                      {role.skills.length > 4 && (
                                         <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm rounded-full">
-                                          +{role.skills.filter(skill => skill).length - 4} more
+                                          +{role.skills.length - 4} more
                                         </span>
                                       )}
                                     </div>
