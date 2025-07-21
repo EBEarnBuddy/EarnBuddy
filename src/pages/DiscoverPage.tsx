@@ -21,7 +21,10 @@ import {
   Bell,
   Settings,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Filter,
+  BarChart3,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useGigs, useStartups } from '../hooks/useFirestore';
@@ -29,6 +32,11 @@ import { TrendingPods } from '../components/ui/trending-pods';
 import { BuilderFeed } from '../components/ui/builder-feed';
 import { FloatingCard } from '../components/ui/floating-card';
 import { Skeleton } from '../components/ui/skeleton';
+import { AdvancedSearch } from '../components/ui/advanced-search';
+import { AnalyticsDashboard } from '../components/ui/analytics-dashboard';
+import { NotificationCenter } from '../components/ui/notification-center';
+import { VideoCall } from '../components/ui/video-call';
+import { OnboardingFlow } from '../components/ui/onboarding-flow';
 import ThemeToggle from '../components/ThemeToggle';
 
 const DiscoverPage: React.FC = () => {
@@ -38,6 +46,42 @@ const DiscoverPage: React.FC = () => {
   const { startups, loading: startupsLoading } = useStartups();
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(!userProfile?.skills?.length);
+
+  // Mock notifications
+  const notifications = [
+    {
+      id: '1',
+      type: 'message' as const,
+      title: 'New message from Sarah Chen',
+      message: 'Hey! I saw your profile and would love to collaborate on a project.',
+      timestamp: '2 minutes ago',
+      read: false,
+      priority: 'medium' as const
+    },
+    {
+      id: '2',
+      type: 'project' as const,
+      title: 'Project milestone completed',
+      message: 'React Dashboard project has been marked as complete.',
+      timestamp: '1 hour ago',
+      read: false,
+      priority: 'high' as const
+    },
+    {
+      id: '3',
+      type: 'payment' as const,
+      title: 'Payment received',
+      message: 'You received $2,500 for the E-commerce Platform project.',
+      timestamp: '3 hours ago',
+      read: true,
+      priority: 'medium' as const
+    }
+  ];
 
   const handleLogout = async () => {
     try {
@@ -48,6 +92,20 @@ const DiscoverPage: React.FC = () => {
     }
   };
 
+  const handleSearch = (filters: any) => {
+    console.log('Search filters:', filters);
+    // Implement search logic
+  };
+
+  const handleNotificationAction = (id: string) => {
+    console.log('Notification action:', id);
+  };
+
+  const handleOnboardingComplete = (data: any) => {
+    console.log('Onboarding data:', data);
+    setShowOnboarding(false);
+    // Update user profile with onboarding data
+  };
   const quickActions = [
     { 
       title: 'Community Pods', 
@@ -122,15 +180,45 @@ const DiscoverPage: React.FC = () => {
                   placeholder="Search opportunities..."
                   className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 w-64"
                 />
+                <motion.button
+                  onClick={() => setShowAdvancedSearch(true)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <Filter className="w-4 h-4 text-gray-500" />
+                </motion.button>
               </div>
+
+              {/* Analytics Button */}
+              <motion.button
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </motion.button>
+
+              {/* Video Call Button */}
+              <motion.button
+                onClick={() => setShowVideoCall(true)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Video className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </motion.button>
 
               {/* Notifications */}
               <motion.button
+                onClick={() => setShowNotifications(true)}
                 className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 whileHover={{ scale: 1.05 }}
               >
                 <Bell className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
               </motion.button>
 
               {/* Profile Dropdown */}
@@ -213,6 +301,21 @@ const DiscoverPage: React.FC = () => {
       )}
 
       <div className="container mx-auto px-6 py-8">
+        {/* Analytics Dashboard */}
+        <AnimatePresence>
+          {showAnalytics && (
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AnalyticsDashboard />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Welcome Section */}
         <motion.div
           className="mb-8"
@@ -463,6 +566,38 @@ const DiscoverPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearch
+        isOpen={showAdvancedSearch}
+        onClose={() => setShowAdvancedSearch(false)}
+        onSearch={handleSearch}
+      />
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAsRead={handleNotificationAction}
+        onMarkAllAsRead={() => console.log('Mark all as read')}
+        onDelete={handleNotificationAction}
+      />
+
+      {/* Video Call */}
+      <VideoCall
+        isOpen={showVideoCall}
+        onClose={() => setShowVideoCall(false)}
+        roomName="Team Standup"
+        participants={[]}
+      />
+
+      {/* Onboarding Flow */}
+      <OnboardingFlow
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+        onSkip={() => setShowOnboarding(false)}
+      />
     </div>
   );
 };
