@@ -86,20 +86,57 @@ export interface Gig {
   id?: string;
   title: string;
   description: string;
-  budget: string;
+  company: string;
+  companyLogo?: string;
+  industry: string;
+  projectType: 'startup' | 'enterprise' | 'agency' | 'nonprofit';
+  totalBudget: string;
   duration: string;
-  skills: string[];
-  category: string;
-  clientId: string;
-  clientName: string;
-  clientAvatar?: string;
+  location: string;
+  remote: boolean;
+  equity?: string;
+  benefits: string[];
+  roles: ProjectRole[];
   status: 'open' | 'in-progress' | 'completed' | 'cancelled';
-  applicants: GigApplication[];
+  totalApplicants: number;
+  postedBy: string;
+  postedByName: string;
+  postedByAvatar?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  location?: string;
-  remote: boolean;
   urgency: 'low' | 'medium' | 'high';
+  featured: boolean;
+  tags: string[];
+}
+
+export interface ProjectRole {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  responsibilities: string[];
+  skills: string[];
+  experience: 'entry' | 'mid' | 'senior' | 'lead';
+  budget: string;
+  equity?: string;
+  timeCommitment: string;
+  applicants: RoleApplication[];
+  filled: boolean;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface RoleApplication {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  roleId: string;
+  coverLetter: string;
+  portfolio?: string;
+  expectedSalary?: string;
+  availability: string;
+  appliedAt: Timestamp;
+  status: 'pending' | 'accepted' | 'rejected' | 'interviewing';
+  notes?: string;
 }
 
 export interface GigApplication {
@@ -676,28 +713,108 @@ export class FirestoreService {
   }
 
   // Gigs
-  static async createGig(gigData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  static async createProject(projectData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt' | 'totalApplicants'>): Promise<string> {
     const docRef = await addDoc(collection(db, 'gigs'), {
-      ...gigData,
+      ...projectData,
+      totalApplicants: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
     return docRef.id;
   }
 
-  static async getGigs(): Promise<Gig[]> {
+  static async getProjects(): Promise<Gig[]> {
     const querySnapshot = await getDocs(
       query(collection(db, 'gigs'), orderBy('createdAt', 'desc'))
     );
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gig));
   }
 
-  static async applyToGig(gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
-    const gigRef = doc(db, 'gigs', gigId);
+  static async applyToRole(projectId: string, roleId: string, userId: string, applicationData: {
+    coverLetter: string;
+    portfolio?: string;
+    expectedSalary?: string;
+    availability: string;
+  }): Promise<void> {
+    const projectRef = doc(db, 'gigs', projectId);
     const userProfile = await this.getUserProfile(userId);
     
-    await updateDoc(gigRef, {
-      applicants: arrayUnion({
+    const application: RoleApplication = {
+      userId,
+      userName: userProfile?.displayName || 'Anonymous User',
+      userAvatar: userProfile?.photoURL || '',
+      roleId,
+      coverLetter: applicationData.coverLetter,
+      portfolio: applicationData.portfolio || '',
+      expectedSalary: applicationData.expectedSalary || '',
+      availability: applicationData.availability,
+      appliedAt: serverTimestamp() as any,
+      status: 'pending'
+    };
+
+    // Get current project data
+    const projectDoc = await getDoc(projectRef);
+    if (projectDoc.exists()) {
+      const projectData = projectDoc.data() as Gig;
+      const updatedRoles = projectData.roles.map(role => {
+        if (role.id === roleId) {
+          return {
+            ...role,
+            applicants: [...role.applicants, application]
+          };
+        }
+        return role;
+      });
+
+      await updateDoc(projectRef, {
+        roles: updatedRoles,
+        totalApplicants: increment(1),
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
+
+  static async bookmarkProject(projectId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedGigs: arrayUnion(projectId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async unbookmarkProject(projectId: string, userId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      bookmarkedGigs: arrayRemove(projectId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async updateRoleApplicationStatus(projectId: string, roleId: string, applicationUserId: string, status: 'accepted' | 'rejected' | 'interviewing'): Promise<void> {
+    const projectRef = doc(db, 'gigs', projectId);
+    const projectDoc = await getDoc(projectRef);
+    
+    if (projectDoc.exists()) {
+      const projectData = projectDoc.data() as Gig;
+      const updatedRoles = projectData.roles.map(role => {
+        if (role.id === roleId) {
+          const updatedApplicants = role.applicants.map(app => {
+            if (app.userId === applicationUserId) {
+              return { ...app, status };
+            }
+            return app;
+          });
+          return { ...role, applicants: updatedApplicants };
+        }
+        return role;
+      });
+
+      await updateDoc(projectRef, {
+        roles: updatedRoles,
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
         userId,
         userName: userProfile?.displayName || 'Anonymous User',
         userAvatar: userProfile?.photoURL || '',

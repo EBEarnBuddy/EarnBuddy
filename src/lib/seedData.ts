@@ -141,46 +141,199 @@ export const seedSampleData = async () => {
     }
 
     // Sample Freelance Gigs
-    const gigs = [
+    const projects = [
       {
-        title: 'Frontend Developer for E-commerce Platform',
-        description: 'We\'re looking for a skilled frontend developer to help build our next-generation e-commerce platform using React and TypeScript.',
-        tags: ['React', 'TypeScript', 'Tailwind CSS'],
-        budget: '$2,500 - $4,000',
+        title: 'AI-Powered E-commerce Platform',
+        description: 'Building the next generation of personalized shopping experiences using machine learning and modern web technologies. Join our team to revolutionize online retail.',
+        company: 'ShopSmart AI',
+        industry: 'E-commerce',
+        projectType: 'startup' as const,
+        totalBudget: '$150,000 - $250,000',
         duration: '2-3 weeks',
+        location: 'San Francisco, CA',
+        remote: true,
+        equity: '0.5% - 2%',
+        benefits: ['Health Insurance', 'Flexible Hours', 'Learning Budget', 'Stock Options'],
+        roles: [
+          {
+            id: 'frontend-lead',
+            title: 'Frontend Lead Developer',
+            description: 'Lead the frontend development team and architect the user interface',
+            requirements: ['5+ years React experience', 'TypeScript proficiency', 'Team leadership'],
+            responsibilities: ['Architect frontend systems', 'Lead development team', 'Code reviews'],
+            skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
+            experience: 'senior' as const,
+            budget: '$120,000 - $150,000',
+            equity: '1% - 2%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          },
+          {
+            id: 'ml-engineer',
+            title: 'ML Engineer',
+            description: 'Build and deploy machine learning models for personalization',
+            requirements: ['ML/AI experience', 'Python proficiency', 'Model deployment'],
+            responsibilities: ['Develop ML models', 'Deploy to production', 'Optimize performance'],
+            skills: ['Python', 'TensorFlow', 'PyTorch', 'AWS'],
+            experience: 'mid' as const,
+            budget: '$100,000 - $130,000',
+            equity: '0.5% - 1%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          },
+          {
+            id: 'product-designer',
+            title: 'Senior Product Designer',
+            description: 'Design intuitive user experiences for our AI-powered platform',
+            requirements: ['5+ years UX/UI design', 'E-commerce experience', 'Design systems'],
+            responsibilities: ['User research', 'Design systems', 'Prototyping'],
+            skills: ['Figma', 'Design Systems', 'User Research', 'Prototyping'],
+            experience: 'senior' as const,
+            budget: '$90,000 - $120,000',
+            equity: '0.3% - 0.8%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'medium' as const
+          }
+        ],
+        status: 'open' as const,
+        urgency: 'high' as const,
+        featured: true,
+        tags: ['AI', 'E-commerce', 'React', 'Machine Learning'],
         postedBy: 'sample-user-1',
-        applicants: [],
-        status: 'open' as const,
-        requirements: ['3+ years React experience', 'TypeScript proficiency', 'E-commerce experience preferred']
+        postedByName: 'Alex Chen',
+        postedByAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face'
       },
       {
-        title: 'UI/UX Designer for Mobile App',
-        description: 'Seeking a creative UI/UX designer to design a modern mobile application for our fitness platform.',
-        tags: ['Figma', 'Mobile Design', 'Prototyping'],
-        budget: '$1,800 - $3,200',
-        duration: '3-4 weeks',
+        title: 'FinTech Mobile Banking Revolution',
+        description: 'Creating the future of mobile banking with cutting-edge security and user experience. Multiple roles available for a complete team.',
+        company: 'NeoBank',
+        industry: 'FinTech',
+        projectType: 'startup' as const,
+        totalBudget: '$200,000 - $300,000',
+        duration: '4-6 months',
+        location: 'New York, NY',
+        remote: true,
+        equity: '1% - 3%',
+        benefits: ['Health Insurance', 'Dental', 'Vision', 'Unlimited PTO', 'Stock Options'],
+        roles: [
+          {
+            id: 'mobile-lead',
+            title: 'Mobile App Lead (iOS/Android)',
+            description: 'Lead mobile development for our revolutionary banking app',
+            requirements: ['React Native expertise', 'Banking/FinTech experience', 'Security knowledge'],
+            responsibilities: ['Mobile architecture', 'Team leadership', 'Security implementation'],
+            skills: ['React Native', 'iOS', 'Android', 'Security', 'Banking APIs'],
+            experience: 'senior' as const,
+            budget: '$130,000 - $160,000',
+            equity: '1.5% - 3%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          },
+          {
+            id: 'backend-architect',
+            title: 'Backend Architect',
+            description: 'Design and build scalable, secure backend systems',
+            requirements: ['Microservices architecture', 'Banking regulations knowledge', 'High-scale systems'],
+            responsibilities: ['System architecture', 'API design', 'Security compliance'],
+            skills: ['Node.js', 'Microservices', 'AWS', 'Security', 'Banking'],
+            experience: 'senior' as const,
+            budget: '$140,000 - $170,000',
+            equity: '1% - 2%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          },
+          {
+            id: 'security-engineer',
+            title: 'Security Engineer',
+            description: 'Ensure top-tier security for financial transactions',
+            requirements: ['Cybersecurity expertise', 'Financial regulations', 'Penetration testing'],
+            responsibilities: ['Security audits', 'Compliance', 'Threat assessment'],
+            skills: ['Cybersecurity', 'Compliance', 'Penetration Testing', 'Encryption'],
+            experience: 'senior' as const,
+            budget: '$120,000 - $150,000',
+            equity: '0.5% - 1%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          }
+        ],
+        status: 'open' as const,
+        urgency: 'medium' as const,
+        featured: true,
+        tags: ['FinTech', 'Mobile', 'Security', 'Banking'],
         postedBy: 'sample-user-2',
-        applicants: [],
-        status: 'open' as const,
-        requirements: ['Mobile design experience', 'Figma expertise', 'User research skills']
+        postedByName: 'Sarah Kim',
+        postedByAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face'
       },
       {
-        title: 'Full-stack Developer for SaaS Platform',
-        description: 'Build a comprehensive SaaS platform with modern technologies including React, Node.js, and PostgreSQL.',
-        tags: ['React', 'Node.js', 'PostgreSQL', 'AWS'],
-        budget: '$5,000 - $8,000',
-        duration: '6-8 weeks',
-        postedBy: 'sample-user-3',
-        applicants: [],
+        title: 'Climate Tech Data Platform',
+        description: 'Building a comprehensive platform to track and reduce carbon emissions for enterprises. Join our mission to fight climate change through technology.',
+        company: 'CarbonZero',
+        industry: 'Climate Tech',
+        projectType: 'startup' as const,
+        totalBudget: '$180,000 - $280,000',
+        duration: '3-5 months',
+        location: 'Austin, TX',
+        remote: true,
+        equity: '0.8% - 2.5%',
+        benefits: ['Health Insurance', 'Climate Impact', 'Learning Budget', 'Remote Work'],
+        roles: [
+          {
+            id: 'data-scientist',
+            title: 'Senior Data Scientist',
+            description: 'Analyze environmental data and build predictive models',
+            requirements: ['PhD or Masters in Data Science', 'Environmental data experience', 'ML expertise'],
+            responsibilities: ['Data analysis', 'Model development', 'Research'],
+            skills: ['Python', 'R', 'Machine Learning', 'Environmental Science'],
+            experience: 'senior' as const,
+            budget: '$110,000 - $140,000',
+            equity: '1% - 2%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'high' as const
+          },
+          {
+            id: 'fullstack-dev',
+            title: 'Full-Stack Developer',
+            description: 'Build the platform that will help companies reduce their carbon footprint',
+            requirements: ['Full-stack experience', 'React/Node.js', 'Data visualization'],
+            responsibilities: ['Platform development', 'API integration', 'Data visualization'],
+            skills: ['React', 'Node.js', 'PostgreSQL', 'D3.js'],
+            experience: 'mid' as const,
+            budget: '$90,000 - $120,000',
+            equity: '0.5% - 1.5%',
+            timeCommitment: 'Full-time',
+            applicants: [],
+            filled: false,
+            priority: 'medium' as const
+          }
+        ],
         status: 'open' as const,
-        requirements: ['Full-stack experience', 'Database design', 'Cloud deployment']
+        urgency: 'medium' as const,
+        featured: false,
+        tags: ['Climate Tech', 'Data Science', 'Full-Stack', 'Impact'],
+        postedBy: 'sample-user-3',
+        postedByName: 'Marcus Rodriguez',
+        postedByAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face'
       }
     ];
 
-    // Create gigs
-    for (const gig of gigs) {
-      await FirestoreService.createGig(gig);
-      console.log(`Created gig: ${gig.title}`);
+    // Create projects
+    for (const project of projects) {
+      await FirestoreService.createProject(project);
+      console.log(`Created project: ${project.title}`);
     }
 
     // Sample Startups
