@@ -251,3 +251,153 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
     </motion.div>
   );
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Chat Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Hash className="w-6 h-6 text-gray-500" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">{roomName}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {members} members • {onlineMembers} online
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <Users className="w-5 h-5 text-gray-500" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <Pin className="w-5 h-5 text-gray-500" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <Settings className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          </div>
+        ) : (
+          <>
+            {messages.map((message, index) => renderMessage(message, index))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+          {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+        </div>
+      )}
+
+      {/* File Preview */}
+      {selectedFile && (
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            {previewUrl && selectedFile.type.startsWith('image/') ? (
+              <img src={previewUrl} alt="Preview" className="w-12 h-12 rounded object-cover" />
+            ) : (
+              <File className="w-8 h-8 text-gray-500" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                {selectedFile.name}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {formatFileSize(selectedFile.size)}
+              </p>
+            </div>
+            <button
+              onClick={removeSelectedFile}
+              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Message Input */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex items-end gap-3">
+          <div className="relative">
+            <button
+              onClick={() => setShowMediaOptions(!showMediaOptions)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <Paperclip className="w-5 h-5 text-gray-500" />
+            </button>
+            
+            <AnimatePresence>
+              {showMediaOptions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2"
+                >
+                  <button
+                    onClick={() => handleFileSelect('image')}
+                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <Image className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Image</span>
+                  </button>
+                  <button
+                    onClick={() => handleFileSelect('video')}
+                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <Video className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Video</span>
+                  </button>
+                  <button
+                    onClick={() => handleFileSelect('file')}
+                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <File className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">File</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <div className="flex-1 relative">
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type a message..."
+              className="w-full px-4 py-3 pr-12 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+              rows={1}
+              style={{ minHeight: '44px', maxHeight: '120px' }}
+            />
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors">
+              <Smile className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          
+          <button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim() && !selectedFile}
+            className="p-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 rounded-lg transition-colors"
+          >
+            <Send className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
