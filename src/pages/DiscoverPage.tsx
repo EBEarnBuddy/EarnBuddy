@@ -399,12 +399,12 @@ const DiscoverPage: React.FC = () => {
 
         {/* Welcome Section */}
         <motion.div
-          className="mb-8"
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="flex items-center justify-between mb-6">
             Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}! 
             {userProfile?.onboardingData?.role && typeof userProfile.onboardingData.role === 'string' && (
               <span className="text-emerald-600 dark:text-emerald-400"> 
