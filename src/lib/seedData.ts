@@ -1,5 +1,6 @@
 import { FirestoreService } from './firestore';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
 
 export const seedSampleData = async () => {
   try {

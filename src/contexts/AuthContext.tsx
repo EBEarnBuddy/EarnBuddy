@@ -60,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           interests: [],
           location: '',
           onboardingCompleted: false,
-          onboardingData: undefined,
           joinedPods: [],
           joinedRooms: [],
           postedStartups: [],
