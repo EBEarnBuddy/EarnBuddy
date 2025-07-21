@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FirestoreService } from '../../lib/firestore';
-import { formatDistanceToNow } from 'date-fns';
 
 interface PodChatProps {
   pod: {
