@@ -2,6 +2,7 @@ import {
   collection, 
   doc, 
   addDoc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   getDocs, 
@@ -415,11 +416,11 @@ export class FirestoreService {
 
   // User Profiles
   static async createUserProfile(profileData: UserProfile): Promise<void> {
-    await updateDoc(doc(db, 'userProfiles', profileData.uid), {
+    await setDoc(doc(db, 'userProfiles', profileData.uid), {
       ...profileData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    });
+    }, { merge: true });
   }
 
   static async getUserProfile(userId: string): Promise<UserProfile | null> {
