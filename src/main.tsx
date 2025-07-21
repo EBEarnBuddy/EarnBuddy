@@ -39,12 +39,6 @@ createRoot(document.getElementById('root')!).render(
             </ProtectedRoute>
           } />
           
-          <Route path="/pod/:podId" element={
-            <ProtectedRoute>
-              <PodPage />
-            </ProtectedRoute>
-          } />
-          
           <Route path="/freelance" element={
             <ProtectedRoute>
               <FreelancePage />
