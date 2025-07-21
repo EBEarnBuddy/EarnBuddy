@@ -4,7 +4,6 @@ import { Menu, X, ArrowUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassMorphism } from './ui/glass-morphism';
 import { GradientButton } from './ui/gradient-button';
-import ThemeToggle from './ThemeToggle';
 
 const Navigation: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);

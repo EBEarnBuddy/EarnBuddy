@@ -57,8 +57,6 @@ export const ModernFooter: React.FC = () => {
           <div className="lg:col-span-2">
             <motion.div
               className="flex items-center space-x-3 mb-6"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
               <div className="relative">
                 <img
@@ -66,9 +64,8 @@ export const ModernFooter: React.FC = () => {
                   alt="EarnBuddy"
                   className="w-12 h-12 object-contain"
                 />
-                <div className="absolute inset-0 bg-emerald-500/20 rounded-lg blur-lg animate-pulse"></div>
               </div>
-              <span className="text-3xl font-bold from-emerald-400 to-lime-400 bg-clip-text ">
+              <span className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent">
                 EarnBuddy
               </span>
             </motion.div>

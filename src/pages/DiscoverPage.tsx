@@ -38,7 +38,6 @@ import { AnalyticsDashboard } from '../components/ui/analytics-dashboard';
 import { NotificationCenter } from '../components/ui/notification-center';
 import { VideoCall } from '../components/ui/video-call';
 import { OnboardingFlow } from '../components/ui/onboarding-flow';
-import ThemeToggle from '../components/ThemeToggle';
 
 const DiscoverPage: React.FC = () => {
   const { currentUser, userProfile, logout } = useAuth();
