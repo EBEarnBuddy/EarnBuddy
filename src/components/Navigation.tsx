@@ -4,6 +4,7 @@ import { Menu, X, ArrowUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassMorphism } from './ui/glass-morphism';
 import { GradientButton } from './ui/gradient-button';
+import ThemeToggle from './ThemeToggle';
 
 const Navigation: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -76,7 +77,7 @@ const Navigation: React.FC = () => {
       <motion.nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-out ${
           isScrolled
-            ? 'mx-4 mt-4'
+            ? 'mx-2 sm:mx-4 mt-2 sm:mt-4'
             : ''
         }`}
         initial={{ y: -100 }}
@@ -85,9 +86,9 @@ const Navigation: React.FC = () => {
       >
         <GlassMorphism
           intensity={isScrolled ? 'heavy' : 'light'}
-          className={`${isScrolled ? 'rounded-2xl shadow-2xl' : 'rounded-none'} border-0 ${isScrolled ? 'border' : ''} border-white/20 dark:border-gray-700/20`}
+          className={`${isScrolled ? 'rounded-xl sm:rounded-2xl shadow-2xl' : 'rounded-none'} border-0 ${isScrolled ? 'border' : ''} border-white/20 dark:border-gray-700/20`}
         >
-          <div className={`${isScrolled ? 'px-4 sm:px-8 py-4' : 'container mx-auto px-4 sm:px-8 py-6'}`}>
+          <div className={`${isScrolled ? 'px-3 sm:px-4 md:px-8 py-3 sm:py-4' : 'container mx-auto px-4 sm:px-8 py-4 sm:py-6'}`}>
             <div className="flex items-center justify-between">
               {/* Logo */}
               <motion.div
