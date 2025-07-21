@@ -50,7 +50,6 @@ const DiscoverPage: React.FC = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
 
   // Mock notifications
