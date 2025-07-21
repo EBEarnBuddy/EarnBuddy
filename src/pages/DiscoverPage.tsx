@@ -36,7 +36,6 @@ import { Skeleton } from '../components/ui/skeleton';
 import { AdvancedSearch } from '../components/ui/advanced-search';
 import { AnalyticsDashboard } from '../components/ui/analytics-dashboard';
 import { NotificationCenter } from '../components/ui/notification-center';
-import { VideoCall } from '../components/ui/video-call';
 import { OnboardingFlow } from '../components/ui/onboarding-flow';
 
 const DiscoverPage: React.FC = () => {
@@ -51,7 +50,6 @@ const DiscoverPage: React.FC = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
 
   // Mock notifications
