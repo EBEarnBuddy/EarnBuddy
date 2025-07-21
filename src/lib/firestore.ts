@@ -1,394 +1,582 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, 
-  Search, 
-  Filter, 
-  Plus, 
-  MapPin, 
-  Users, 
-  TrendingUp, 
-  Star, 
-  Bookmark,
-  ExternalLink,
-  Rocket,
-  DollarSign,
-  Building,
-  Zap
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useStartups } from '../hooks/useFirestore';
-import { Skeleton } from '../components/ui/skeleton';
-import ThemeToggle from '../components/ThemeToggle';
+  collection, 
+  doc, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  getDocs, 
+  getDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  onSnapshot, 
+  arrayUnion, 
+  arrayRemove, 
+  increment,
+  serverTimestamp,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from './firebase';
 
-const StartupsPage: React.FC = () => {
-  const { currentUser, logout } = useAuth();
-  const { startups, loading, applyToStartup, bookmarkStartup, unbookmarkStartup } = useStartups();
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedIndustry, setSelectedIndustry] = useState('all');
-  const [selectedStage, setSelectedStage] = useState('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+// Data Types
+export interface Pod {
+  id?: string;
+  name: string;
+  description: string;
+  category: string;
+  memberCount: number;
+  members: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  isPrivate: boolean;
+  tags: string[];
+  avatar?: string;
+  createdBy: string;
+}
 
-  const industries = [
-    { id: 'all', name: 'All Industries', icon: Building },
-    { id: 'healthcare', name: 'Healthcare', icon: Star },
-    { id: 'fintech', name: 'FinTech', icon: DollarSign },
-    { id: 'education', name: 'EdTech', icon: Users },
-    { id: 'climate', name: 'Climate Tech', icon: Zap },
-    { id: 'ai', name: 'AI/ML', icon: Rocket }
-  ];
+export interface PodPost {
+  id?: string;
+  podId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  type: 'text' | 'image' | 'link' | 'poll';
+  attachments?: any[];
+  likes: string[];
+  comments: Comment[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
 
-  const stages = [
-    { id: 'all', name: 'All Stages' },
-    { id: 'pre-seed', name: 'Pre-Seed' },
-    { id: 'seed', name: 'Seed' },
-    { id: 'series-a', name: 'Series A' },
-    { id: 'series-b', name: 'Series B+' }
-  ];
+export interface Comment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  createdAt: Timestamp;
+  likes: string[];
+}
 
-  const filteredStartups = startups.filter(startup => {
-    const matchesSearch = startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         startup.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesIndustry = selectedIndustry === 'all' || 
-                           startup.industry.toLowerCase().includes(selectedIndustry);
-    const matchesStage = selectedStage === 'all' || 
-                        startup.stage.toLowerCase().replace(/\s+/g, '-').includes(selectedStage);
-    return matchesSearch && matchesIndustry && matchesStage;
-  });
+export interface Gig {
+  id?: string;
+  title: string;
+  description: string;
+  budget: string;
+  duration: string;
+  skills: string[];
+  category: string;
+  clientId: string;
+  clientName: string;
+  clientAvatar?: string;
+  status: 'open' | 'in-progress' | 'completed' | 'cancelled';
+  applicants: GigApplication[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  location?: string;
+  remote: boolean;
+  urgency: 'low' | 'medium' | 'high';
+}
 
-  const handleApplyToStartup = async (startupId: string) => {
-    if (!currentUser) return;
-    try {
-      await applyToStartup(startupId, currentUser.uid, {
-        coverLetter: 'I am excited about this opportunity and would love to contribute to your mission.',
-        portfolio: 'https://myportfolio.com'
+export interface GigApplication {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  coverLetter: string;
+  proposedBudget?: string;
+  proposedTimeline?: string;
+  portfolio?: string;
+  appliedAt: Timestamp;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export interface Startup {
+  id?: string;
+  name: string;
+  description: string;
+  industry: string;
+  stage: string;
+  location: string;
+  funding: string;
+  equity: string;
+  requirements: string[];
+  founderId: string;
+  founderName: string;
+  founderAvatar?: string;
+  status: 'active' | 'paused' | 'closed';
+  applicants: StartupApplication[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  website?: string;
+  logo?: string;
+  teamSize?: number;
+}
+
+export interface StartupApplication {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  coverLetter: string;
+  portfolio?: string;
+  appliedAt: Timestamp;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
+export interface ChatRoom {
+  id?: string;
+  name: string;
+  description: string;
+  category: string;
+  members: string[];
+  createdBy: string;
+  createdAt: Timestamp;
+  lastActivity: Timestamp;
+  isPrivate: boolean;
+  avatar?: string;
+}
+
+export interface ChatMessage {
+  id?: string;
+  roomId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  content: string;
+  type: 'text' | 'image' | 'video' | 'file';
+  attachment?: {
+    url: string;
+    name: string;
+    type: string;
+    size: string;
+  };
+  reactions: { [emoji: string]: string[] };
+  timestamp: Timestamp;
+  edited?: boolean;
+  editedAt?: Timestamp;
+}
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  bio?: string;
+  skills: string[];
+  interests: string[];
+  location?: string;
+  website?: string;
+  github?: string;
+  linkedin?: string;
+  twitter?: string;
+  onboardingCompleted: boolean;
+  onboardingData?: OnboardingData;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface OnboardingData {
+  role: 'freelancer' | 'founder' | 'builder' | 'investor';
+  experience: 'beginner' | 'intermediate' | 'expert';
+  interests: string[];
+  skills: string[];
+  goals: string[];
+  availability: 'full-time' | 'part-time' | 'weekends' | 'flexible';
+  budget?: string;
+  location?: string;
+  remote: boolean;
+}
+
+export interface UserAnalytics {
+  userId: string;
+  profileViews: number;
+  postsCreated: number;
+  messagesPosted: number;
+  podsJoined: number;
+  gigsApplied: number;
+  startupsApplied: number;
+  completedProjects: number;
+  earnings: number;
+  lastActive: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Recommendation {
+  userId: string;
+  recommendedGigs: Gig[];
+  recommendedStartups: Startup[];
+  recommendedPods: Pod[];
+  recommendedUsers: UserProfile[];
+  lastUpdated: Timestamp;
+}
+
+// Firestore Service Class
+export class FirestoreService {
+  // Pods
+  static async createPod(podData: Omit<Pod, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'pods'), {
+      ...podData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getPods(): Promise<Pod[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'pods'), orderBy('updatedAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Pod));
+  }
+
+  static async joinPod(podId: string, userId: string): Promise<void> {
+    const podRef = doc(db, 'pods', podId);
+    await updateDoc(podRef, {
+      members: arrayUnion(userId),
+      memberCount: increment(1),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async leavePod(podId: string, userId: string): Promise<void> {
+    const podRef = doc(db, 'pods', podId);
+    await updateDoc(podRef, {
+      members: arrayRemove(userId),
+      memberCount: increment(-1),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Pod Posts
+  static async createPodPost(postData: Omit<PodPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'podPosts'), {
+      ...postData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getPodPosts(podId: string): Promise<PodPost[]> {
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'podPosts'),
+        where('podId', '==', podId),
+        orderBy('createdAt', 'desc')
+      )
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PodPost));
+  }
+
+  static async likePodPost(postId: string, userId: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    await updateDoc(postRef, {
+      likes: arrayUnion(userId),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Gigs
+  static async createGig(gigData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'gigs'), {
+      ...gigData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getGigs(): Promise<Gig[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'gigs'), orderBy('createdAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Gig));
+  }
+
+  static async applyToGig(gigId: string, application: Omit<GigApplication, 'appliedAt' | 'status'>): Promise<void> {
+    const gigRef = doc(db, 'gigs', gigId);
+    await updateDoc(gigRef, {
+      applicants: arrayUnion({
+        ...application,
+        appliedAt: serverTimestamp(),
+        status: 'pending'
+      }),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Startups
+  static async createStartup(startupData: Omit<Startup, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'startups'), {
+      ...startupData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getStartups(): Promise<Startup[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'startups'), orderBy('createdAt', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
+  }
+
+  static async applyToStartup(startupId: string, application: Omit<StartupApplication, 'appliedAt' | 'status'>): Promise<void> {
+    const startupRef = doc(db, 'startups', startupId);
+    await updateDoc(startupRef, {
+      applicants: arrayUnion({
+        ...application,
+        appliedAt: serverTimestamp(),
+        status: 'pending'
+      }),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Chat Rooms
+  static async createChatRoom(roomData: Omit<ChatRoom, 'id' | 'createdAt' | 'lastActivity'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'chatRooms'), {
+      ...roomData,
+      createdAt: serverTimestamp(),
+      lastActivity: serverTimestamp()
+    });
+    return docRef.id;
+  }
+
+  static async getChatRooms(): Promise<ChatRoom[]> {
+    const querySnapshot = await getDocs(
+      query(collection(db, 'chatRooms'), orderBy('lastActivity', 'desc'))
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+  }
+
+  static async joinChatRoom(roomId: string, userId: string): Promise<void> {
+    const roomRef = doc(db, 'chatRooms', roomId);
+    await updateDoc(roomRef, {
+      members: arrayUnion(userId),
+      lastActivity: serverTimestamp()
+    });
+  }
+
+  // Chat Messages
+  static async sendMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'chatMessages'), {
+      ...messageData,
+      timestamp: serverTimestamp()
+    });
+
+    // Update room's last activity
+    const roomRef = doc(db, 'chatRooms', messageData.roomId);
+    await updateDoc(roomRef, {
+      lastActivity: serverTimestamp()
+    });
+
+    return docRef.id;
+  }
+
+  static async getChatMessages(roomId: string): Promise<ChatMessage[]> {
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'chatMessages'),
+        where('roomId', '==', roomId),
+        orderBy('timestamp', 'asc')
+      )
+    );
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+  }
+
+  static async addReaction(messageId: string, emoji: string, userId: string): Promise<void> {
+    const messageRef = doc(db, 'chatMessages', messageId);
+    const messageDoc = await getDoc(messageRef);
+    
+    if (messageDoc.exists()) {
+      const data = messageDoc.data() as ChatMessage;
+      const reactions = data.reactions || {};
+      
+      if (!reactions[emoji]) {
+        reactions[emoji] = [];
+      }
+      
+      if (!reactions[emoji].includes(userId)) {
+        reactions[emoji].push(userId);
+      } else {
+        reactions[emoji] = reactions[emoji].filter(id => id !== userId);
+        if (reactions[emoji].length === 0) {
+          delete reactions[emoji];
+        }
+      }
+      
+      await updateDoc(messageRef, { reactions });
+    }
+  }
+
+  // User Profiles
+  static async createUserProfile(profileData: UserProfile): Promise<void> {
+    await updateDoc(doc(db, 'userProfiles', profileData.uid), {
+      ...profileData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  static async getUserProfile(userId: string): Promise<UserProfile | null> {
+    const docSnap = await getDoc(doc(db, 'userProfiles', userId));
+    return docSnap.exists() ? { ...docSnap.data() } as UserProfile : null;
+  }
+
+  static async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    await updateDoc(doc(db, 'userProfiles', userId), {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Onboarding
+  static async saveOnboardingResponse(userId: string, onboardingData: OnboardingData): Promise<void> {
+    await updateDoc(doc(db, 'userProfiles', userId), {
+      onboardingData,
+      onboardingCompleted: true,
+      updatedAt: serverTimestamp()
+    });
+  }
+
+  // Analytics
+  static async getUserAnalytics(userId: string): Promise<UserAnalytics | null> {
+    const docSnap = await getDoc(doc(db, 'userAnalytics', userId));
+    return docSnap.exists() ? { ...docSnap.data() } as UserAnalytics : null;
+  }
+
+  static async updateUserAnalytics(userId: string, updates: Partial<UserAnalytics>): Promise<void> {
+    const analyticsRef = doc(db, 'userAnalytics', userId);
+    const docSnap = await getDoc(analyticsRef);
+    
+    if (docSnap.exists()) {
+      await updateDoc(analyticsRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
       });
-    } catch (error) {
-      console.error('Error applying to startup:', error);
+    } else {
+      await updateDoc(analyticsRef, {
+        userId,
+        profileViews: 0,
+        postsCreated: 0,
+        messagesPosted: 0,
+        podsJoined: 0,
+        gigsApplied: 0,
+        startupsApplied: 0,
+        completedProjects: 0,
+        earnings: 0,
+        ...updates,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     }
-  };
+  }
 
-  const handleBookmarkStartup = async (startupId: string) => {
-    if (!currentUser) return;
-    try {
-      await bookmarkStartup(startupId, currentUser.uid);
-    } catch (error) {
-      console.error('Error bookmarking startup:', error);
-    }
-  };
+  // Recommendations
+  static async getRecommendations(userId: string): Promise<Recommendation | null> {
+    const docSnap = await getDoc(doc(db, 'recommendations', userId));
+    return docSnap.exists() ? { ...docSnap.data() } as Recommendation : null;
+  }
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
+  static async generateRecommendations(userId: string, userProfile: UserProfile): Promise<void> {
+    // Get all data
+    const [gigs, startups, pods] = await Promise.all([
+      this.getGigs(),
+      this.getStartups(),
+      this.getPods()
+    ]);
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.button
-                onClick={() => navigate('/discover')}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </motion.button>
-              
-              <div className="flex items-center gap-3">
-                <img src="/logofinal.png" alt="EarnBuddy" className="w-8 h-8" />
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Startups</h1>
-              </div>
-            </div>
+    // Simple recommendation algorithm based on user's onboarding data
+    const userSkills = userProfile.onboardingData?.skills || [];
+    const userInterests = userProfile.onboardingData?.interests || [];
+    const userRole = userProfile.onboardingData?.role;
 
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <motion.button
-                onClick={handleLogout}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                Logout
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      </header>
+    // Recommend gigs based on skills
+    const recommendedGigs = gigs.filter(gig => 
+      gig.skills.some(skill => userSkills.includes(skill)) ||
+      userInterests.some(interest => gig.category.toLowerCase().includes(interest.toLowerCase()))
+    ).slice(0, 5);
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-6">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search startups..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
-                />
-              </div>
-            </div>
+    // Recommend startups based on interests and role
+    const recommendedStartups = startups.filter(startup =>
+      userInterests.some(interest => 
+        startup.industry.toLowerCase().includes(interest.toLowerCase()) ||
+        startup.description.toLowerCase().includes(interest.toLowerCase())
+      ) || (userRole === 'founder' && startup.stage === 'pre-seed')
+    ).slice(0, 5);
 
-            <motion.button
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Plus className="w-5 h-5" />
-              List Startup
-            </motion.button>
-          </div>
+    // Recommend pods based on interests
+    const recommendedPods = pods.filter(pod =>
+      userInterests.some(interest =>
+        pod.category.toLowerCase().includes(interest.toLowerCase()) ||
+        pod.name.toLowerCase().includes(interest.toLowerCase()) ||
+        pod.tags.some(tag => tag.toLowerCase().includes(interest.toLowerCase()))
+      )
+    ).slice(0, 5);
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex flex-wrap gap-2">
-              {industries.map((industry) => {
-                const Icon = industry.icon;
-                return (
-                  <motion.button
-                    key={industry.id}
-                    onClick={() => setSelectedIndustry(industry.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
-                      selectedIndustry === industry.id
-                        ? 'bg-emerald-600 text-white shadow-lg'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {industry.name}
-                  </motion.button>
-                );
-              })}
-            </div>
+    // Save recommendations
+    await updateDoc(doc(db, 'recommendations', userId), {
+      userId,
+      recommendedGigs,
+      recommendedStartups,
+      recommendedPods,
+      recommendedUsers: [], // TODO: Implement user recommendations
+      lastUpdated: serverTimestamp()
+    });
+  }
 
-            <select
-              value={selectedStage}
-              onChange={(e) => setSelectedStage(e.target.value)}
-              className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            >
-              {stages.map((stage) => (
-                <option key={stage.id} value={stage.id}>
-                  {stage.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+  // Real-time listeners
+  static subscribeToCollection(
+    collectionName: string,
+    callback: (data: any[]) => void,
+    queryConstraints: any[] = []
+  ): () => void {
+    const q = query(collection(db, collectionName), ...queryConstraints);
+    return onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(data);
+    });
+  }
 
-        {/* Startups Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-start justify-between mb-4">
-                  <Skeleton className="h-8 w-48" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-                <Skeleton className="h-20 w-full mb-4" />
-                <div className="flex gap-2 mb-4">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-                <div className="flex justify-between items-center mb-4">
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-5 w-20" />
-                </div>
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AnimatePresence>
-              {filteredStartups.map((startup, index) => {
-                const hasApplied = currentUser ? startup.applicants.some(app => app.userId === currentUser.uid) : false;
-                
-                return (
-                  <motion.div
-                    key={startup.id}
-                    className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    whileHover={{ y: -4 }}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                          {startup.name}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
-                            {startup.industry}
-                          </span>
-                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
-                            {startup.stage}
-                          </span>
-                        </div>
-                      </div>
-                      <motion.button
-                        onClick={() => handleBookmarkStartup(startup.id!)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Bookmark className="w-5 h-5 text-gray-400 hover:text-emerald-600" />
-                      </motion.button>
-                    </div>
+  static subscribeToChatMessages(
+    roomId: string,
+    callback: (messages: ChatMessage[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'chatMessages'),
+      where('roomId', '==', roomId),
+      orderBy('timestamp', 'asc')
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const messages = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as ChatMessage));
+      callback(messages);
+    });
+  }
 
-                    <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">
-                      {startup.description}
-                    </p>
-
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{startup.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="font-semibold">{startup.funding}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="w-4 h-4" />
-                        <span>{startup.equity}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
-                        <Users className="w-4 h-4" />
-                        <span>{startup.applicantCount || startup.applicants.length} applicants</span>
-                      </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        startup.status === 'active' 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {startup.status}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Looking for:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {startup.requirements.slice(0, 3).map((req, reqIndex) => (
-                            <span
-                              key={reqIndex}
-                              className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full"
-                            >
-                              {req}
-                            </span>
-                          ))}
-                          {startup.requirements.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs rounded-full">
-                              +{startup.requirements.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <motion.button
-                          onClick={() => handleApplyToStartup(startup.id!)}
-                          disabled={hasApplied}
-                          className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
-                            hasApplied
-                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-                              : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-lg'
-                          }`}
-                          whileHover={{ scale: hasApplied ? 1 : 1.02 }}
-                          whileTap={{ scale: hasApplied ? 1 : 0.98 }}
-                        >
-                          {hasApplied ? 'Applied' : 'Apply to Join'}
-                        </motion.button>
-                        <motion.button
-                          className="px-4 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <ExternalLink className="w-5 h-5" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {!loading && filteredStartups.length === 0 && (
-          <div className="text-center py-12">
-            <Rocket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No startups found</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {searchTerm ? 'Try adjusting your search terms' : 'Be the first to list your startup!'}
-            </p>
-            <motion.button
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              List Your Startup
-            </motion.button>
-          </div>
-        )}
-      </div>
-
-      {/* Create Startup Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCreateModal(false)}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">List Your Startup</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Startup listing is coming soon! For now, browse and apply to existing opportunities.
-              </p>
-              <motion.button
-                onClick={() => setShowCreateModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Got it
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-export default StartupsPage;
+  static subscribeToPodPosts(
+    podId: string,
+    callback: (posts: PodPost[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, 'podPosts'),
+      where('podId', '==', podId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const posts = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as PodPost));
+      callback(posts);
+    });
+  }
+}
