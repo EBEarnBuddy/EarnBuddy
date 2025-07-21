@@ -19,7 +19,6 @@ import {
   Camera
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import ThemeToggle from '../components/ThemeToggle';
 
 const ProfilePage: React.FC = () => {
   const { currentUser, userProfile, logout } = useAuth();
@@ -83,7 +82,6 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <ThemeToggle />
               <motion.button
                 onClick={handleLogout}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"

@@ -20,7 +20,6 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useStartups } from '../hooks/useFirestore';
 import { Skeleton } from '../components/ui/skeleton';
-import ThemeToggle from '../components/ThemeToggle';
 
 const StartupsPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -111,7 +110,6 @@ const StartupsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <ThemeToggle />
               <motion.button
                 onClick={handleLogout}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
