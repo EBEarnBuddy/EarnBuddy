@@ -183,6 +183,8 @@ const RoomChatPage: React.FC = () => {
           roomId={roomId!}
           members={room.members.length}
           onlineMembers={Math.floor(room.members.length * 0.6)}
+          hasWhiteboard={room.hasWhiteboard}
+          hasVideoCall={room.hasVideoCall}
         />
       </div>
     </div>

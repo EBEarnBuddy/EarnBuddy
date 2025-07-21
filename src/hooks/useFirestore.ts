@@ -241,14 +241,15 @@ export const useRoomChatMessages = (roomId: string) => {
 
   const sendMessage = async (content: string, senderId: string, senderName: string, senderAvatar: string, type: 'text' | 'image' | 'file' | 'video' = 'text', attachment?: any) => {
     try {
-      await FirestoreService.sendMessage({
+      await FirestoreService.sendChatMessage({
         roomId,
         senderId,
         senderName,
         senderAvatar,
         content,
         type,
-        attachment
+        attachment,
+        reactions: {}
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
@@ -257,7 +258,7 @@ export const useRoomChatMessages = (roomId: string) => {
 
   const addReaction = async (messageId: string, emoji: string, userId: string) => {
     try {
-      await FirestoreService.addReaction(messageId, emoji, userId);
+      await FirestoreService.addReactionToChatMessage(messageId, emoji, userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add reaction');
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, MessageCircle, Lock, Globe } from 'lucide-react';
+import { Users, MessageCircle, Lock, Globe, Video, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RoomCardProps {

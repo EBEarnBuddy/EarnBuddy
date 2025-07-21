@@ -157,8 +157,6 @@ export interface ChatRoom {
   lastActivity: Timestamp;
   isPrivate: boolean;
   avatar?: string;
-  hasWhiteboard?: boolean;
-  hasVideoCall?: boolean;
   lastMessage?: {
     content: string;
     senderName: string;
@@ -473,7 +471,7 @@ export class FirestoreService {
       
       await updateDoc(postRef, { 
         reactions,
-        updatedAt: serverTimestamp()
+        timestamp: serverTimestamp()
       });
     }
   }

@@ -45,7 +45,9 @@ const RoomsPage: React.FC = () => {
         members: [currentUser.uid],
         createdBy: currentUser.uid,
         isPrivate: newRoom.isPrivate,
-        messages: []
+        category: 'General',
+        hasWhiteboard: true,
+        hasVideoCall: true
       });
       setNewRoom({ name: '', description: '', isPrivate: false });
       setShowCreateModal(false);
