@@ -315,7 +315,7 @@ export const PodFeed: React.FC<PodFeedProps> = ({
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
                                 className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-                                onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id!)}
+                                onClick={() => handleLikePost(post.id!)}
                               />
                               <button
                                 onClick={() => handleAddComment(post.id!)}
@@ -326,7 +326,7 @@ export const PodFeed: React.FC<PodFeedProps> = ({
                               </button>
                             </div>
                           </div>
-                        </motion.div>
+                                onClick={() => handleBookmarkPost(post.id!)}
                       )}
                     </AnimatePresence>
                   </div>

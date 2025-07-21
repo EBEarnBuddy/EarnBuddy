@@ -86,6 +86,7 @@ export const BuilderFeed: React.FC = () => {
       case 'launch': return 'text-emerald-600 bg-emerald-100';
       case 'join': return 'text-blue-600 bg-blue-100';
       case 'fund': return 'text-purple-600 bg-purple-100';
+      case 'apply': return 'text-orange-600 bg-orange-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };

@@ -126,7 +126,7 @@ export const PodChat: React.FC<PodChatProps> = ({ pod, onClose }) => {
     if (!newMessage.trim() || !currentUser) return;
 
     try {
-      await FirestoreService.createPodPost(pod.id, currentUser.uid, newMessage);
+      await createPost(newMessage, currentUser.uid);
       setNewMessage('');
       setIsAtBottom(true);
     } catch (error) {

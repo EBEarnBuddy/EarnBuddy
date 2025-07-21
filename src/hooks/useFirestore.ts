@@ -329,66 +329,71 @@ export const useStartups = () => {
   return { startups, loading, error, createStartup, applyToStartup, bookmarkStartup, unbookmarkStartup };
 };
 
-export const useGigs = () => {
-  const [gigs, setGigs] = useState<FreelanceGig[]>([]);
+export const useProjects = () => {
+  const [projects, setProjects] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGigs = async () => {
+    const fetchProjects = async () => {
       try {
         setLoading(true);
-        const fetchedGigs = await FirestoreService.getGigs();
-        setGigs(fetchedGigs);
+        const fetchedProjects = await FirestoreService.getProjects();
+        setProjects(fetchedProjects);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch gigs');
+        setError(err instanceof Error ? err.message : 'Failed to fetch projects');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGigs();
+    fetchProjects();
   }, []);
 
-  const createGig = async (gigData: Omit<FreelanceGig, 'id' | 'createdAt' | 'updatedAt' | 'applicantCount'>) => {
+  const createProject = async (projectData: Omit<Gig, 'id' | 'createdAt' | 'updatedAt' | 'totalApplicants'>) => {
     try {
-      await FirestoreService.createGig(gigData);
-      // Refresh gigs
-      const updatedGigs = await FirestoreService.getGigs();
-      setGigs(updatedGigs);
+      await FirestoreService.createProject(projectData);
+      // Refresh projects
+      const updatedProjects = await FirestoreService.getProjects();
+      setProjects(updatedProjects);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create gig');
+      setError(err instanceof Error ? err.message : 'Failed to create project');
     }
   };
 
-  const applyToGig = async (gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }) => {
+  const applyToRole = async (projectId: string, roleId: string, userId: string, applicationData: {
+    coverLetter: string;
+    portfolio?: string;
+    expectedSalary?: string;
+    availability: string;
+  }) => {
     try {
-      await FirestoreService.applyToGig(gigId, userId, applicationData);
-      // Refresh gigs
-      const updatedGigs = await FirestoreService.getGigs();
-      setGigs(updatedGigs);
+      await FirestoreService.applyToRole(projectId, roleId, userId, applicationData);
+      // Refresh projects
+      const updatedProjects = await FirestoreService.getProjects();
+      setProjects(updatedProjects);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to apply to gig');
+      setError(err instanceof Error ? err.message : 'Failed to apply to role');
     }
   };
 
-  const bookmarkGig = async (gigId: string, userId: string) => {
+  const bookmarkProject = async (projectId: string, userId: string) => {
     try {
-      await FirestoreService.bookmarkGig(gigId, userId);
+      await FirestoreService.bookmarkProject(projectId, userId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to bookmark gig');
+      setError(err instanceof Error ? err.message : 'Failed to bookmark project');
     }
   };
 
-  const unbookmarkGig = async (gigId: string, userId: string) => {
+  const unbookmarkProject = async (projectId: string, userId: string) => {
     try {
-      await FirestoreService.unbookmarkGig(gigId, userId);
+      await FirestoreService.unbookmarkProject(projectId, userId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to unbookmark gig');
+      setError(err instanceof Error ? err.message : 'Failed to unbookmark project');
     }
   };
 
-  return { gigs, loading, error, createGig, applyToGig, bookmarkGig, unbookmarkGig };
+  return { projects, loading, error, createProject, applyToRole, bookmarkProject, unbookmarkProject };
 };
 
 export const useNotifications = () => {

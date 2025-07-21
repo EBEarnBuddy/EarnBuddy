@@ -202,10 +202,10 @@ const DiscoverPage: React.FC = () => {
     const activity = [];
     
     // Add recommended gigs
-    if (recommendations.recommendedGigs?.length > 0) {
+    if (recommendations.recommendedProjects?.length > 0) {
       activity.push({
-        type: 'Recommended Gig',
-        title: recommendations.recommendedGigs[0].title,
+        type: 'Recommended Project',
+        title: recommendations.recommendedProjects[0].title,
         time: '2 min ago',
         urgent: true
       });
@@ -506,9 +506,9 @@ const DiscoverPage: React.FC = () => {
                   </h3>
                   
                   <div className="space-y-4">
-                    {recommendations.recommendedGigs?.slice(0, 2).map((gig: any, index: number) => (
+                    {recommendations.recommendedProjects?.slice(0, 2).map((project: any, index: number) => (
                       <motion.div
-                        key={gig.id}
+                        key={project.id}
                         className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-emerald-300 dark:hover:border-emerald-500 transition-colors cursor-pointer"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -517,12 +517,12 @@ const DiscoverPage: React.FC = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{gig.title}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{gig.description}</p>
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-1">{project.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{project.description}</p>
                             <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-                              <span>{gig.budget}</span>
+                              <span>{project.totalBudget}</span>
                               <span>•</span>
-                              <span>{gig.duration}</span>
+                              <span>{project.duration}</span>
                             </div>
                           </div>
                           <ArrowRight className="w-4 h-4 text-gray-400" />

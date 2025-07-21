@@ -10,28 +10,28 @@ const FreelancingSection: React.FC = () => {
   const features = [
     {
       icon: Target,
-      title: "Showcase your profile with aligned intent",
-      description: "Build a reputation that speaks to your values and goals"
+      title: "Join complete teams, not isolated gigs",
+      description: "Work alongside designers, developers, and product managers on unified projects"
     },
     {
       icon: Handshake,
-      title: "Apply once, build long-term collaborations",
-      description: "Move beyond one-off gigs to meaningful partnerships"
+      title: "Multiple roles per project",
+      description: "Apply to specific roles that match your skills within larger team initiatives"
     },
     {
       icon: Star,
-      title: "Access Colance mode to co-own ideas",
-      description: "Transition from freelancer to co-creator when the fit is right"
+      title: "Equity and ownership opportunities",
+      description: "Many projects offer equity stakes alongside competitive compensation"
     },
     {
       icon: Eye,
-      title: "Feature on Talent Walls visible to founders",
-      description: "Get discovered by startups looking for your exact skillset"
+      title: "Work with funded startups and enterprises",
+      description: "Projects from YC-backed startups to Fortune 500 companies"
     },
     {
       icon: CreditCard,
-      title: "Manage tasks, payments, and collab history seamlessly",
-      description: "All-in-one workspace for professional collaboration"
+      title: "Transparent compensation and benefits",
+      description: "See salary ranges, equity, and benefits upfront for every role"
     }
   ];
 
