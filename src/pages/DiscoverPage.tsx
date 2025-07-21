@@ -28,7 +28,7 @@ import {
   Eye
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePods, useGigs, useStartups, useAnalytics, useRecommendations, useOnboarding } from '../hooks/useFirestore';
+import { usePods, useProjects, useStartups, useAnalytics, useRecommendations, useOnboarding } from '../hooks/useFirestore';
 import { TrendingPods } from '../components/ui/trending-pods';
 import { BuilderFeed } from '../components/ui/builder-feed';
 import { FloatingCard } from '../components/ui/floating-card';
@@ -42,7 +42,7 @@ import DashboardNavbar from '../components/DashboardNavbar';
 const DiscoverPage: React.FC = () => {
   const { currentUser, userProfile, logout } = useAuth();
   const { pods, loading: podsLoading } = usePods();
-  const { gigs, loading: gigsLoading } = useGigs();
+  const { projects, loading: projectsLoading } = useProjects();
   const { startups, loading: startupsLoading } = useStartups();
   const { analytics, loading: analyticsLoading } = useAnalytics();
   const { recommendations, loading: recommendationsLoading } = useRecommendations();
@@ -128,12 +128,12 @@ const DiscoverPage: React.FC = () => {
         count: pods.length
       },
       { 
-        title: 'Freelance Gigs', 
-        description: 'Find freelance opportunities', 
+        title: 'Team Projects', 
+        description: 'Join project teams', 
         icon: Briefcase, 
         path: '/freelance', 
         color: 'from-green-500 to-emerald-600',
-        count: gigs.length
+        count: projects.length
       },
       { 
         title: 'Startups', 
