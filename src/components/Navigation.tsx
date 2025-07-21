@@ -193,8 +193,7 @@ const Navigation: React.FC = () => {
               }`}
               initial={false}
               animate={{
-                height: isMobileMenuOpen ? 'auto' : 0,
-              className="px-2 lg:px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors text-sm lg:text-base"
+                height: isMobileMenuOpen ? 'auto' : 0
               }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
@@ -243,7 +242,7 @@ const Navigation: React.FC = () => {
                     className="w-full"
                   >
                     Get Started
-              className="shadow-lg hover:shadow-emerald-500/25 px-3 lg:px-4 py-2 text-sm lg:text-base"
+                  </GradientButton>
                 </div>
               </div>
             </motion.div>
