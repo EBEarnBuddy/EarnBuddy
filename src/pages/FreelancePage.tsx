@@ -701,3 +701,5 @@ const FreelancePage: React.FC = () => {
     </div>
   );
 };
+
+export default FreelancePage;
