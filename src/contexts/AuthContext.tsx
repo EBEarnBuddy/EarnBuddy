@@ -192,10 +192,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (!firebaseReady || !auth) {
-    if (currentUser && isFirebaseReady && !loading && location.pathname === '/' && userProfile?.onboardingCompleted) {
+      setLoading(false);
       return;
     }
-  }, [currentUser, isFirebaseReady, loading, navigate, location.pathname, userProfile]);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
