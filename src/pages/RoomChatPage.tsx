@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRooms, useRoomMessages } from '../hooks/useFirestore';
 import { ChatInterface } from '../components/ui/chat-interface';
-import ThemeToggle from '../components/ThemeToggle';
+import DashboardNavbar from '../components/DashboardNavbar';
 
 const RoomChatPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -140,44 +140,27 @@ const RoomChatPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.button
-                onClick={() => navigate('/rooms')}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </motion.button>
-              
-              <div className="flex items-center gap-3">
-                <img src="/logofinal.png" alt="EarnBuddy" className="w-8 h-8" />
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{room.members.length} members</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-4">
-              <motion.button
-                onClick={handleLogout}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                Logout
-              </motion.button>
+      <DashboardNavbar />
+
+      {/* Real-time Chat Interface */}
+      <div className="container mx-auto px-6 py-6 h-[calc(100vh-80px)]">
+        <div className="mb-4">
+          <div className="flex items-center gap-3">
+            <motion.button
+              onClick={() => navigate('/community')}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </motion.button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{room.members.length} members</p>
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Real-time Chat Interface */}
-      <div className="container mx-auto px-6 py-6 h-[calc(100vh-88px)]">
         <ChatInterface
           roomName={room.name}
           roomId={roomId!}

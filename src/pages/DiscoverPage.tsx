@@ -37,6 +37,7 @@ import { AdvancedSearch } from '../components/ui/advanced-search';
 import { AnalyticsDashboard } from '../components/ui/analytics-dashboard';
 import { NotificationCenter } from '../components/ui/notification-center';
 import { OnboardingFlow } from '../components/ui/onboarding-flow';
+import DashboardNavbar from '../components/DashboardNavbar';
 
 const DiscoverPage: React.FC = () => {
   const { currentUser, userProfile, logout } = useAuth();
@@ -47,7 +48,6 @@ const DiscoverPage: React.FC = () => {
   const { recommendations, loading: recommendationsLoading } = useRecommendations();
   const { saveOnboardingResponse } = useOnboarding();
   const navigate = useNavigate();
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -249,153 +249,7 @@ const DiscoverPage: React.FC = () => {
                 <img src="/logofinal.png" alt="EarnBuddy" className="w-10 h-10" />
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">EarnBuddy</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Discover Dashboard</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Navigation Links */}
-              <nav className="hidden md:flex items-center gap-1">
-                <motion.button
-                  onClick={() => navigate('/discover')}
-                  className="px-4 py-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Discover
-                </motion.button>
-                <motion.button
-                  onClick={() => navigate('/freelance')}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Freelance
-                </motion.button>
-                <motion.button
-                  onClick={() => navigate('/startups')}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Startups
-                </motion.button>
-                <motion.button
-                  onClick={() => navigate('/community')}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Community
-                </motion.button>
-              </nav>
-
-              {/* Analytics Button */}
-              <motion.button
-                onClick={() => setShowAnalytics(!showAnalytics)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                <BarChart3 className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              </motion.button>
-
-              {/* Video Call Button */}
-              <motion.button
-                onClick={() => setShowVideoCall(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                <Video className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              </motion.button>
-
-              {/* Notifications */}
-              <motion.button
-                onClick={() => setShowNotifications(true)}
-                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                <Bell className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-                {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications.filter(n => !n.read).length}
-                  </span>
-                )}
-              </motion.button>
-
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <motion.button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <img
-                    src={userProfile?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div className="hidden sm:block text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {userProfile?.displayName || currentUser?.displayName || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Builder</p>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                </motion.button>
-
-                <AnimatePresence>
-                  {showProfileDropdown && (
-                    <motion.div
-                      className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                    >
-                      <motion.button
-                        onClick={() => {
-                          setShowProfileDropdown(false);
-                          navigate('/profile');
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        whileHover={{ x: 5 }}
-                      >
-                        <User className="w-4 h-4" />
-                        Profile
-                      </motion.button>
-                      <motion.button
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        whileHover={{ x: 5 }}
-                      >
-                        <Settings className="w-4 h-4" />
-                        Settings
-                      </motion.button>
-                      <div className="border-t border-gray-200 dark:border-gray-700">
-                        <motion.button
-                          onClick={() => {
-                            setShowProfileDropdown(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                          whileHover={{ x: 5 }}
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Click outside to close dropdown */}
-      {showProfileDropdown && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => setShowProfileDropdown(false)}
-        />
-      )}
+      <DashboardNavbar />
 
       <div className="container mx-auto px-6 py-8">
         {/* Analytics Dashboard */}
@@ -522,20 +376,20 @@ const DiscoverPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
               <input
                 type="text"
                 placeholder="Search opportunities, pods, startups, and more..."
-                className="w-full pl-12 pr-12 py-4 text-lg border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 shadow-lg"
+                className="w-full pl-14 pr-14 py-5 text-xl border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 shadow-lg"
               />
               <motion.button
                 onClick={() => setShowAdvancedSearch(true)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 whileHover={{ scale: 1.1 }}
               >
-                <Filter className="w-5 h-5 text-gray-500" />
+                <Filter className="w-6 h-6 text-gray-500" />
               </motion.button>
             </div>
           </div>
