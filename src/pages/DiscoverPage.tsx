@@ -24,7 +24,8 @@ import {
   ChevronDown,
   Filter,
   BarChart3,
-  Video
+  Video,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useGigs, useStartups, useAnalytics, useRecommendations, useOnboarding } from '../hooks/useFirestore';
@@ -170,7 +171,6 @@ const DiscoverPage: React.FC = () => {
 
   // Personalized stats based on user data
   const getPersonalizedStats = () => {
-    { 
     if (!analytics) {
       return [
         { label: 'Active Builders', value: '2,847', icon: Users, change: '+12%' },
