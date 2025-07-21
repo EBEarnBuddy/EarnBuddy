@@ -440,13 +440,12 @@ export const useEnhancedPodPosts = (podId: string) => {
 
   useEffect(() => {
     if (!podId) return;
-  const [error, setError] = useState<string | null>(null);
 
     setLoading(true);
     
     // Set up real-time listener for pod posts
     try {
-      const unsubscribe = firestoreService.subscribeToPodPosts(podId, (newPosts) => {
+      const unsubscribe = FirestoreService.subscribeToPodPosts(podId, (newPosts) => {
         setPosts(newPosts);
         setLoading(false);
         setError(null);
@@ -460,7 +459,7 @@ export const useEnhancedPodPosts = (podId: string) => {
     }
   }, [podId]);
 
-  return { posts, loading, error };
+  const createPost = async (content: string, userId: string, imageUrl?: string) => {
     try {
       await FirestoreService.createPodPost(podId, userId, content, imageUrl);
     } catch (err) {
