@@ -444,7 +444,7 @@ const FreelancePage: React.FC = () => {
                                         {role.experience.charAt(0).toUpperCase() + role.experience.slice(1)} Level
                                       </span>
                                       <span className={`text-sm font-medium ${getPriorityColor(role.priority || 'medium')}`}>
-                                        {((role.priority || 'medium') as string).charAt(0).toUpperCase() + ((role.priority || 'medium') as string).slice(1)} Priority
+                                        {String(role.priority || 'medium').charAt(0).toUpperCase() + String(role.priority || 'medium').slice(1)} Priority
                                       </span>
                                     </div>
                                   </div>
