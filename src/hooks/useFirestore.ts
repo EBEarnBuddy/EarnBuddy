@@ -220,6 +220,52 @@ export const useRoomMessages = (roomId: string) => {
   return { messages, loading, error, sendMessage };
 };
 
+export const useRoomChatMessages = (roomId: string) => {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    setLoading(true);
+    
+    // Set up real-time listener
+    const unsubscribe = FirestoreService.subscribeToRoomMessages(roomId, (newMessages) => {
+      setMessages(newMessages);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [roomId]);
+
+  const sendMessage = async (content: string, senderId: string, senderName: string, senderAvatar: string, type: 'text' | 'image' | 'file' | 'video' = 'text', attachment?: any) => {
+    try {
+      await FirestoreService.sendMessage({
+        roomId,
+        senderId,
+        senderName,
+        senderAvatar,
+        content,
+        type,
+        attachment
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    }
+  };
+
+  const addReaction = async (messageId: string, emoji: string, userId: string) => {
+    try {
+      await FirestoreService.addReaction(messageId, emoji, userId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add reaction');
+    }
+  };
+
+  return { messages, loading, error, sendMessage, addReaction };
+};
+
 export const useStartups = () => {
   const [startups, setStartups] = useState<Startup[]>([]);
   const [loading, setLoading] = useState(true);
