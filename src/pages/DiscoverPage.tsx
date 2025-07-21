@@ -50,6 +50,7 @@ const DiscoverPage: React.FC = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
 
   // Mock notifications
@@ -448,15 +449,6 @@ const DiscoverPage: React.FC = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Quick Actions */}
-        <motion.section
-          className="mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Quick Actions</h3>
             <motion.button
               className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-medium flex items-center gap-1"
