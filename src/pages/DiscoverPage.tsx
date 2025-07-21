@@ -50,6 +50,7 @@ const DiscoverPage: React.FC = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
 
   // Mock notifications
@@ -744,14 +745,6 @@ const DiscoverPage: React.FC = () => {
         onMarkAsRead={handleNotificationAction}
         onMarkAllAsRead={() => console.log('Mark all as read')}
         onDelete={handleNotificationAction}
-      />
-
-      {/* Video Call */}
-      <VideoCall
-        isOpen={showVideoCall}
-        onClose={() => setShowVideoCall(false)}
-        roomName="Team Standup"
-        participants={[]}
       />
 
       {/* Onboarding Flow */}

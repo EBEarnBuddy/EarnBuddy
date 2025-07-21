@@ -420,5 +420,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </AnimatePresence>
       </div>
-    );
+    </div>
+  );
 };
