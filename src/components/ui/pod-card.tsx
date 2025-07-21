@@ -53,7 +53,6 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
           transition={{ type: "spring", stiffness: 400 }}
         >
           <pod.icon className="w-8 h-8 text-white relative z-10" />
-            {pod.isJoined ? 'Open Chat' : 'Join Pod'}
         </motion.div>
 
         {/* Content */}
@@ -97,6 +96,11 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
                 className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500"
                 initial={{ x: "-100%" }}
                 whileHover={{ x: "0%" }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
+            )}
+          </motion.button>
+
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1 text-gray-500">
               <MessageCircle className="w-3 h-3" />
@@ -106,7 +110,7 @@ export const PodCard: React.FC<PodCardProps> = ({ pod, onJoin, onEnter }) => {
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>{pod.onlineMembers || 0}</span>
             </div>
-          </motion.button>
+          </div>
         </div>
 
         {/* Background Pattern */}
