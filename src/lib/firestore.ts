@@ -815,6 +815,13 @@ export class FirestoreService {
       });
     }
   }
+
+  static async applyToGig(gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
+    const gigRef = doc(db, 'gigs', gigId);
+    const userProfile = await this.getUserProfile(userId);
+    
+    await updateDoc(gigRef, {
+      applicants: arrayUnion({
         userId,
         userName: userProfile?.displayName || 'Anonymous User',
         userAvatar: userProfile?.photoURL || '',
