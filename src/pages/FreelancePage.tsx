@@ -451,7 +451,6 @@ const FreelancePage: React.FC = () => {
                                           </span>
                                         );
                                       })()}
-                                      </span>
                                     </div>
                                   </div>
                                   {role.filled && (
