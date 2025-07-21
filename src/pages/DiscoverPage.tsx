@@ -370,7 +370,6 @@ const DiscoverPage: React.FC = () => {
                 </AnimatePresence>
               </div>
 
-              <ThemeToggle />
             </div>
           </div>
         </div>
