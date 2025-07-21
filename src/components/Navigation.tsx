@@ -147,7 +147,6 @@ const Navigation: React.FC = () => {
 
               {/* Auth Buttons */}
               <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
-                <ThemeToggle />
                 <motion.button
                   onClick={() => handleAuthClick(false)}
                   className="px-3 lg:px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors text-sm lg:text-base"
@@ -166,7 +165,6 @@ const Navigation: React.FC = () => {
 
               {/* Mobile Menu Button */}
               <div className="lg:hidden flex items-center space-x-2">
-                <ThemeToggle />
                 <motion.button
                   className="p-2 rounded-xl hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
