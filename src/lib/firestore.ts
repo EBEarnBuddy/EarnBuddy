@@ -581,6 +581,3 @@ export class FirestoreService {
     });
   }
 }
-    });
-  }
-}
