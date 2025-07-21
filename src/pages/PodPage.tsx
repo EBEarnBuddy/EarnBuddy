@@ -22,17 +22,20 @@ import {
   Flag,
   Eye,
   Clock,
-  TrendingUp
+  TrendingUp,
+  X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePods, useEnhancedPodPosts } from '../hooks/useFirestore';
+import { usePods, usePodPosts } from '../hooks/useFirestore';
 import { PodChat } from '../components/ui/pod-chat';
+import { PodFeed } from '../components/ui/pod-feed';
 import { Skeleton } from '../components/ui/skeleton';
 
 const PodPage: React.FC = () => {
   const { podId } = useParams<{ podId: string }>();
   const { currentUser, userProfile, logout } = useAuth();
   const { pods, loading: podsLoading } = usePods();
+  const { posts, loading: postsLoading, createPost, likePost, unlikePost, bookmarkPost } = usePodPosts(podId || '');
   const navigate = useNavigate();
   const [showPodInfo, setShowPodInfo] = useState(false);
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(true);
@@ -40,6 +43,42 @@ const PodPage: React.FC = () => {
   const pod = pods.find(p => p.id === podId);
   const isJoined = currentUser && pod ? pod.members.includes(currentUser.uid) : false;
 
+  const handleJoinPod = async (podId: string) => {
+    // This would be implemented with the joinPod function from usePods
+    console.log('Joining pod:', podId);
+  };
+
+  const handleCreatePost = async (content: string, imageUrl?: string) => {
+    if (!currentUser) return;
+    try {
+      await createPost(content, currentUser.uid, imageUrl);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    if (!currentUser) return;
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (post?.likes.includes(currentUser.uid)) {
+        await unlikePost(postId, currentUser.uid);
+      } else {
+        await likePost(postId, currentUser.uid);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
+  };
+
+  const handleBookmarkPost = async (postId: string) => {
+    if (!currentUser) return;
+    try {
+      await bookmarkPost(postId, currentUser.uid);
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+    }
+  };
   const handleLogout = async () => {
     try {
       await logout();
