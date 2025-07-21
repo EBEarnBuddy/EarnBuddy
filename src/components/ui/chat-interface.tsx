@@ -63,7 +63,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } catch (error) {
       console.error('Error sending message:', error);
     }
-    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -160,7 +159,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             className="w-10 h-10 rounded-full object-cover"
           />
           <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
         </div>
         
         <div className="flex-1 min-w-0">
