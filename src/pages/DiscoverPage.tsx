@@ -249,6 +249,13 @@ const DiscoverPage: React.FC = () => {
                 <img src="/logofinal.png" alt="EarnBuddy" className="w-10 h-10" />
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">EarnBuddy</h1>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <DashboardNavbar />
 
       <div className="container mx-auto px-6 py-8">
