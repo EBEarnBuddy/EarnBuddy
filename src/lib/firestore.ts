@@ -60,7 +60,7 @@ export interface PodPost {
     size: string;
   };
   likes: string[];
-  comments?: PodComment[];
+  comments: PodComment[];
   bookmarks: string[];
   reactions?: { [emoji: string]: string[] };
   isPinned?: boolean;
@@ -150,13 +150,18 @@ export interface ChatRoom {
   id?: string;
   name: string;
   description: string;
-  category: string;
+  category?: string;
   members: string[];
   createdBy: string;
   createdAt: Timestamp;
   lastActivity: Timestamp;
   isPrivate: boolean;
   avatar?: string;
+  lastMessage?: {
+    content: string;
+    senderName: string;
+    timestamp: Timestamp;
+  };
 }
 
 export interface ChatMessage {
