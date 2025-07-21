@@ -255,22 +255,37 @@ const DiscoverPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Search */}
-              <div className="hidden md:flex relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search opportunities..."
-                  className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 w-64"
-                />
+              {/* Navigation Links */}
+              <nav className="hidden md:flex items-center gap-1">
                 <motion.button
-                  onClick={() => setShowAdvancedSearch(true)}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                  whileHover={{ scale: 1.1 }}
+                  onClick={() => navigate('/discover')}
+                  className="px-4 py-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg font-medium transition-colors"
+                  whileHover={{ scale: 1.05 }}
                 >
-                  <Filter className="w-4 h-4 text-gray-500" />
+                  Discover
                 </motion.button>
-              </div>
+                <motion.button
+                  onClick={() => navigate('/freelance')}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Freelance
+                </motion.button>
+                <motion.button
+                  onClick={() => navigate('/startups')}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Startups
+                </motion.button>
+                <motion.button
+                  onClick={() => navigate('/community')}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Community
+                </motion.button>
+              </nav>
 
               {/* Analytics Button */}
               <motion.button
