@@ -46,7 +46,20 @@ export const usePods = () => {
     }
   };
 
-  return { pods, loading, error, joinPod, leavePod };
+  const createPod = async (podData: Omit<Pod, 'id' | 'createdAt' | 'memberCount'>) => {
+    try {
+      const podId = await FirestoreService.createPod(podData);
+      // Refresh pods
+      const fetchedPods = await FirestoreService.getPods();
+      setPods(fetchedPods);
+      return podId;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create pod');
+      throw err;
+    }
+  };
+
+  return { pods, loading, error, joinPod, leavePod, createPod };
 };
 
 export const usePodPosts = (podId: string) => {

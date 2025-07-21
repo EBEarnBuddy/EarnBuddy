@@ -34,7 +34,9 @@ export const seedSampleData = async () => {
             type: 'research'
           }
         ],
-        isActive: true
+        isActive: true,
+        postCount: 0,
+        lastActivity: null
       },
       {
         name: 'Web3 Pioneers',
@@ -63,7 +65,9 @@ export const seedSampleData = async () => {
             type: 'tutorial'
           }
         ],
-        isActive: true
+        isActive: true,
+        postCount: 0,
+        lastActivity: null
       },
       {
         name: 'Climate Tech',
@@ -87,7 +91,9 @@ export const seedSampleData = async () => {
             type: 'guide'
           }
         ],
-        isActive: true
+        isActive: true,
+        postCount: 0,
+        lastActivity: null
       },
       {
         name: 'Design Systems',
@@ -105,7 +111,9 @@ export const seedSampleData = async () => {
             type: 'tool'
           }
         ],
-        isActive: true
+        isActive: true,
+        postCount: 0,
+        lastActivity: null
       },
       {
         name: 'FinTech Innovators',
@@ -117,7 +125,9 @@ export const seedSampleData = async () => {
         posts: [],
         events: [],
         pinnedResources: [],
-        isActive: true
+        isActive: true,
+        postCount: 0,
+        lastActivity: null
       }
     ];
 
@@ -224,36 +234,46 @@ export const seedSampleData = async () => {
     // Sample Posts for AI Builders pod
     if (createdPods.length > 0) {
       const aiPodId = createdPods[0].id;
-      const posts = [
+      const samplePosts = [
         {
           podId: aiPodId,
           userId: 'sample-user-1',
+          userName: 'Sarah Chen',
+          userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
           content: 'Just launched our new computer vision model! Achieved 94% accuracy on the benchmark dataset. The breakthrough came from combining transformer architectures with novel attention mechanisms. Open sourcing it next week - excited to see what the community builds with it!',
           imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=500&h=300&fit=crop',
           likes: [],
-          replies: [],
+          comments: [],
           bookmarks: []
         },
         {
           podId: aiPodId,
           userId: 'sample-user-2',
+          userName: 'Marcus Rodriguez',
+          userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
           content: 'Looking for collaborators on a new NLP project focused on sentiment analysis for financial markets. We\'re exploring real-time processing of news feeds and social media to predict market movements. DM me if you have experience with transformers or financial data!',
           likes: [],
-          replies: [],
+          comments: [],
           bookmarks: []
         },
         {
           podId: aiPodId,
           userId: 'sample-user-3',
+          userName: 'Alex Kim',
+          userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
           content: 'Great article on transformer architectures and their applications in computer vision. The attention mechanism explanation is particularly clear and well-illustrated. Highly recommend for anyone getting started with vision transformers.',
           likes: [],
-          replies: [],
+          comments: [],
           bookmarks: []
         }
       ];
 
-      for (const post of posts) {
-        await FirestoreService.createPost(post);
+      for (const post of samplePosts) {
+        await addDoc(collection(db, 'podPosts'), {
+          ...post,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
         console.log(`Created post in AI Builders pod`);
       }
     }
@@ -266,7 +286,8 @@ export const seedSampleData = async () => {
         members: ['sample-user-1'],
         createdBy: 'sample-user-1',
         isPrivate: true,
-        messages: []
+        messages: [],
+        lastMessage: null
       },
       {
         name: 'Startup Founders Network',
@@ -274,7 +295,8 @@ export const seedSampleData = async () => {
         members: ['sample-user-2'],
         createdBy: 'sample-user-2',
         isPrivate: true,
-        messages: []
+        messages: [],
+        lastMessage: null
       },
       {
         name: 'Design Feedback Circle',
@@ -282,7 +304,8 @@ export const seedSampleData = async () => {
         members: ['sample-user-3'],
         createdBy: 'sample-user-3',
         isPrivate: false,
-        messages: []
+        messages: [],
+        lastMessage: null
       }
     ];
 

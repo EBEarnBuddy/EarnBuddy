@@ -60,9 +60,11 @@ export const TrendingPods: React.FC<TrendingPodsProps> = ({ pods }) => {
                         <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
                           {pod.name}
                         </h4>
-                        <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full flex-shrink-0">
-                          {pod.growth}
-                        </span>
+                        {pod.growth && (
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full flex-shrink-0">
+                            {pod.growth}
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{pod.description}</p>
                       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-500">
