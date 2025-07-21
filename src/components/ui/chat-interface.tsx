@@ -198,30 +198,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Render attachment if present */}
           {message.attachment && (
             <div className="mt-2">
-      {/* Scroll to Bottom Button */}
-      <AnimatePresence>
-        {!isAtBottom && (
-          <motion.button
-            onClick={() => {
-              scrollToBottom();
-              setIsAtBottom(true);
-            }}
-            className="absolute bottom-20 right-4 bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-700 transition-colors z-10"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            whileHover={{ scale: 1.1 }}
-          >
-            <ArrowDown className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </motion.button>
-        )}
-      </AnimatePresence>
-
               {message.type === 'image' && (
                 <img
                   src={message.attachment.url}
@@ -275,8 +251,3 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
     </motion.div>
   );
-};
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
