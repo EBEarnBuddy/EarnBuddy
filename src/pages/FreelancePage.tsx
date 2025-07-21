@@ -440,8 +440,8 @@ const FreelancePage: React.FC = () => {
                                       {role.title}
                                     </h4>
                                     <div className="flex items-center gap-2 mb-3">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience)}`}>
-                                        {role.experience.charAt(0).toUpperCase() + role.experience.slice(1)} Level
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience || '')}`}>
+                                        {(role.experience || '').charAt(0).toUpperCase() + (role.experience || '').slice(1)} Level
                                       </span>
                                       <span className={`text-sm font-medium ${getPriorityColor(role.priority || 'medium')}`}>
                                         {(role.priority || 'medium').charAt(0).toUpperCase() + (role.priority || 'medium').slice(1)} Priority
