@@ -246,7 +246,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </button>
               ))}
             </div>
-          </button>
+          </div>
         </div>
       </div>
     </motion.div>
