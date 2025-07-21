@@ -564,10 +564,12 @@ export class FirestoreService {
 
   static subscribeToPodPosts(
     podId: string,
+    callback: (posts: PodPost[]) => void
+  ): () => void {
     try {
       // First try with orderBy, fallback to simple query if index doesn't exist
       const q = query(
-        collection(this.db, 'podPosts'),
+        collection(db, 'podPosts'),
         where('podId', '==', podId),
         orderBy('createdAt', 'desc')
       );
@@ -585,7 +587,7 @@ export class FirestoreService {
         // Fallback to simple query without orderBy if index doesn't exist
         if (error.code === 'failed-precondition') {
           const simpleQ = query(
-            collection(this.db, 'podPosts'),
+            collection(db, 'podPosts'),
             where('podId', '==', podId)
           );
           
