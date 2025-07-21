@@ -289,8 +289,6 @@ export const seedSampleData = async () => {
         isPrivate: false,
         category: 'Development',
         avatar: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=100&h=100&fit=crop',
-        messages: [],
-        lastMessage: null,
         hasWhiteboard: true,
         hasVideoCall: true
       },
@@ -302,8 +300,6 @@ export const seedSampleData = async () => {
         isPrivate: false,
         category: 'AI/ML',
         avatar: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop',
-        messages: [],
-        lastMessage: null,
         hasWhiteboard: true,
         hasVideoCall: true
       },
@@ -315,8 +311,6 @@ export const seedSampleData = async () => {
         isPrivate: false,
         category: 'Startup',
         avatar: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=100&h=100&fit=crop',
-        messages: [],
-        lastMessage: null,
         hasWhiteboard: true,
         hasVideoCall: true
       },
@@ -328,8 +322,6 @@ export const seedSampleData = async () => {
         isPrivate: false,
         category: 'Design',
         avatar: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=100&h=100&fit=crop',
-        messages: [],
-        lastMessage: null,
         hasWhiteboard: true,
         hasVideoCall: true
       },
@@ -341,24 +333,79 @@ export const seedSampleData = async () => {
         isPrivate: false,
         category: 'Product',
         avatar: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=100&h=100&fit=crop',
-        messages: [],
-        lastMessage: null,
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'DevOps & Infrastructure',
+        description: 'Share knowledge about deployment, scaling, and infrastructure management',
+        members: ['sample-user-1', 'sample-user-3'],
+        createdBy: 'sample-user-1',
+        isPrivate: false,
+        category: 'DevOps',
+        avatar: 'https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?w=100&h=100&fit=crop',
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Mobile Development',
+        description: 'iOS, Android, and cross-platform mobile development discussions',
+        members: ['sample-user-2'],
+        createdBy: 'sample-user-2',
+        isPrivate: false,
+        category: 'Mobile',
+        avatar: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=100&h=100&fit=crop',
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Blockchain Builders',
+        description: 'Build the future of decentralized applications and smart contracts',
+        members: ['sample-user-1', 'sample-user-2', 'sample-user-3'],
+        createdBy: 'sample-user-3',
+        isPrivate: false,
+        category: 'Blockchain',
+        avatar: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=100&h=100&fit=crop',
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Data Science Lab',
+        description: 'Analyze data, build models, and share insights with fellow data scientists',
+        members: ['sample-user-2', 'sample-user-3'],
+        createdBy: 'sample-user-2',
+        isPrivate: false,
+        category: 'Data Science',
+        avatar: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=100&h=100&fit=crop',
+        hasWhiteboard: true,
+        hasVideoCall: true
+      },
+      {
+        name: 'Cybersecurity Hub',
+        description: 'Discuss security best practices, vulnerabilities, and protection strategies',
+        members: ['sample-user-1'],
+        createdBy: 'sample-user-1',
+        isPrivate: false,
+        category: 'Security',
+        avatar: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=100&h=100&fit=crop',
         hasWhiteboard: true,
         hasVideoCall: true
       }
     ];
 
     // Create rooms
+    const createdRooms = [];
     for (const room of rooms) {
-      await FirestoreService.createRoom(room);
-      console.log(`Created room: ${room.name}`);
-      
-      // Add some sample messages to each room
       const roomId = await FirestoreService.createRoom(room);
-      
+      createdRooms.push({ id: roomId, ...room });
+      console.log(`Created room: ${room.name}`);
+    }
+
+    // Add sample messages to each room
+    for (const room of createdRooms) {
       const sampleMessages = [
         {
-          roomId: roomId,
+          roomId: room.id,
           senderId: 'sample-user-1',
           senderName: 'Sarah Chen',
           senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
@@ -367,13 +414,22 @@ export const seedSampleData = async () => {
           reactions: {}
         },
         {
-          roomId: roomId,
+          roomId: room.id,
           senderId: 'sample-user-2',
           senderName: 'Marcus Rodriguez',
           senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
           content: 'Great to be here! Looking forward to working together.',
           type: 'text' as const,
           reactions: {}
+        },
+        {
+          roomId: room.id,
+          senderId: 'sample-user-3',
+          senderName: 'Alex Kim',
+          senderAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          content: `This ${room.category} room is exactly what I was looking for! 💪`,
+          type: 'text' as const,
+          reactions: { '👍': ['sample-user-1'], '🔥': ['sample-user-2'] }
         }
       ];
       

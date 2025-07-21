@@ -593,17 +593,16 @@ export class FirestoreService {
   }
 
   // Rooms
-  static async createRoom(roomData: Omit<Room, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  static async createRoom(roomData: Omit<ChatRoom, 'id' | 'createdAt' | 'lastActivity'>): Promise<string> {
     const docRef = await addDoc(collection(db, 'rooms'), {
       ...roomData,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
     return docRef.id;
   }
 
-  static async getRooms(userId: string): Promise<Room[]> {
+  static async getRooms(userId: string): Promise<ChatRoom[]> {
     const querySnapshot = await getDocs(
       query(
         collection(db, 'rooms'),
@@ -611,21 +610,20 @@ export class FirestoreService {
         orderBy('lastActivity', 'desc')
       )
     );
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
   }
 
   static async joinRoom(roomId: string, userId: string): Promise<void> {
     const roomRef = doc(db, 'rooms', roomId);
     await updateDoc(roomRef, {
       members: arrayUnion(userId),
-      updatedAt: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
   }
 
   // Messages
-  static async sendMessage(messageData: Omit<Message, 'id' | 'timestamp'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'messages'), {
+  static async sendChatMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
+    const docRef = await addDoc(collection(db, 'chatMessages'), {
       ...messageData,
       timestamp: serverTimestamp()
     });
@@ -634,10 +632,10 @@ export class FirestoreService {
 
   static subscribeToRoomMessages(
     roomId: string,
-    callback: (messages: Message[]) => void
+    callback: (messages: ChatMessage[]) => void
   ): () => void {
     const q = query(
-      collection(db, 'messages'),
+      collection(db, 'chatMessages'),
       where('roomId', '==', roomId),
       orderBy('timestamp', 'asc'),
       limit(100)
@@ -647,7 +645,7 @@ export class FirestoreService {
       const messages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      } as Message));
+      } as ChatMessage));
       callback(messages);
     });
   }
