@@ -23,3 +23,64 @@ dist-ssr
 *.sln
 *.sw?
 .env
+#--- Global Ignores (for the whole repo) ---
+
+# Environment variables (sensitive information, for MongoDB connection at root)
+.env
+
+# --- Backend Specific Ignores (inside the backend/ folder) ---
+
+# Firebase service account key (sensitive information, inside backend/ folder)
+# Ensure this exact filename is correct
+backend/serviceAccountKey.json
+
+# Python virtual environment
+backend/venv/
+backend/.venv/
+backend/env/
+
+# Compiled Python files
+backend/__pycache__/
+backend/*.pyc
+
+# IDE and editor files
+backend/.vscode/
+backend/.idea/
+backend/*.sublime-project
+backend/*.sublime-workspace
+
+# Logs
+backend/*.log
+backend/logs/
+
+# pytest cache
+backend/.pytest_cache/
+backend/.coverage
+
+# FastAPI/Uvicorn specific
+backend/.mypy_cache/
+backend/.ruff_cache/
+
+
+# --- Frontend Specific Ignores (common for React/Node.js) ---
+# Node modules
+frontend/node_modules/
+
+# Build artifacts
+frontend/build/
+frontend/dist/
+
+# Logs
+frontend/*.log
+frontend/logs/
+
+# VS Code settings
+frontend/.vscode/
+
+# .env files specific to frontend if you have them inside frontend/
+# frontend/.env
+
+# Python virtual environment (if at root of repo)
+venv/
+.venv/
+env/
