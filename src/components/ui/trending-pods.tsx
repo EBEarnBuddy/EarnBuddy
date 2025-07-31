@@ -11,13 +11,13 @@ interface TrendingPodsProps {
 
 export const TrendingPods: React.FC<TrendingPodsProps> = ({ pods }) => {
   const navigate = useNavigate();
-  
+
   const trendingPods = pods.slice(0, 3).map(pod => ({
     id: pod.id,
     name: pod.name,
     description: pod.description,
-    members: pod.memberCount || pod.members.length,
-    growth: '+23%', // This would ideally be calculated from actual data
+    members: pod.memberCount || pod.members?.length || 0,
+    growth: pod.growth || '+0%', // Use actual growth data or default to +0%
     gradient: pod.theme,
     icon: pod.icon === 'Zap' ? Zap : pod.icon === 'Users' ? Users : TrendingUp
   }));

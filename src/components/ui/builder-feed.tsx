@@ -19,55 +19,27 @@ interface BuilderActivity {
 
 export const BuilderFeed: React.FC = () => {
   const { userProfile } = useAuth();
-  
+
   // Generate activities based on user profile if available
   const generateActivities = (): BuilderActivity[] => {
-    const defaultActivities = [
-      {
-        id: '1',
-        user: {
-          name: 'Sarah Chen',
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
-          title: 'Full-stack Developer'
-        },
-        action: 'launched',
-        project: 'AI-powered code review tool',
-        timestamp: '2 minutes ago',
-        type: 'launch' as const
-      },
-      {
-        id: '2',
-        user: {
-          name: 'Marcus Rodriguez',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-          title: 'Product Designer'
-        },
-        action: 'joined',
-        project: 'Climate Tech Startup',
-        timestamp: '5 minutes ago',
-        type: 'join' as const
-      },
-      {
-        id: '3',
-        user: {
-          name: 'Alex Kim',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-          title: 'Startup Founder'
-        },
-        action: 'raised',
-        project: '$500K seed funding',
-        timestamp: '12 minutes ago',
-        type: 'fund' as const
-      }
-    ];
-
-    // If we have user activity, we could generate more personalized activities
+    // If we have user activity, show real activities
     if (userProfile?.activityLog && userProfile.activityLog.length > 0) {
-      // This would be implemented to show real user activity
-      return defaultActivities;
+      return userProfile.activityLog.slice(0, 3).map((activity, index) => ({
+        id: activity.id || `activity-${index}`,
+        user: {
+          name: userProfile.displayName || 'Anonymous',
+          avatar: userProfile.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          title: userProfile.title || 'Builder'
+        },
+        action: activity.action || 'updated',
+        project: activity.description || 'their profile',
+        timestamp: activity.timestamp || 'recently',
+        type: 'build' as const
+      }));
     }
 
-    return defaultActivities;
+    // Return empty array if no real activity
+    return [];
   };
 
   const activities = generateActivities();

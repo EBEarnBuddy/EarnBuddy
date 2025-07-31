@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Bell, 
-  Check, 
-  Trash2, 
+import {
+  ArrowLeft,
+  Bell,
+  Check,
+  Trash2,
   Filter,
   MessageCircle,
   Users,
@@ -39,70 +39,8 @@ const NotificationsPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'unread' | 'important'>('all');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
 
-  const notifications: Notification[] = [
-    {
-      id: '1',
-      type: 'message',
-      title: 'New message from Sarah Chen',
-      message: 'Hey! I saw your profile and would love to collaborate on a project. Are you available for a quick chat?',
-      timestamp: '2 minutes ago',
-      read: false,
-      priority: 'medium',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
-      sender: 'Sarah Chen'
-    },
-    {
-      id: '2',
-      type: 'project',
-      title: 'Project milestone completed',
-      message: 'React Dashboard project has been marked as complete. Payment will be processed within 24 hours.',
-      timestamp: '1 hour ago',
-      read: false,
-      priority: 'high',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-      sender: 'Marcus Rodriguez'
-    },
-    {
-      id: '3',
-      type: 'payment',
-      title: 'Payment received',
-      message: 'You received $2,500 for the E-commerce Platform project. Funds have been deposited to your account.',
-      timestamp: '3 hours ago',
-      read: true,
-      priority: 'medium'
-    },
-    {
-      id: '4',
-      type: 'social',
-      title: 'New follower',
-      message: 'Alex Kim started following you and liked your recent post about AI development.',
-      timestamp: '5 hours ago',
-      read: true,
-      priority: 'low',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-      sender: 'Alex Kim'
-    },
-    {
-      id: '5',
-      type: 'system',
-      title: 'Profile verification complete',
-      message: 'Your profile has been verified! You now have access to premium features and higher visibility.',
-      timestamp: '1 day ago',
-      read: true,
-      priority: 'high'
-    },
-    {
-      id: '6',
-      type: 'project',
-      title: 'New project invitation',
-      message: 'You\'ve been invited to join the Climate Tech Startup project as a Frontend Developer.',
-      timestamp: '2 days ago',
-      read: false,
-      priority: 'high',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face',
-      sender: 'Emma Thompson'
-    }
-  ];
+  // TODO: Replace with real notifications from API
+  const notifications: Notification[] = [];
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -117,7 +55,7 @@ const NotificationsPage: React.FC = () => {
 
   const getNotificationColor = (type: string, priority: string) => {
     if (priority === 'high') return 'text-red-600 bg-red-100 dark:bg-red-900/30';
-    
+
     switch (type) {
       case 'message': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
       case 'project': return 'text-green-600 bg-green-100 dark:bg-green-900/30';
@@ -153,8 +91,8 @@ const NotificationsPage: React.FC = () => {
   };
 
   const toggleSelectNotification = (id: string) => {
-    setSelectedNotifications(prev => 
-      prev.includes(id) 
+    setSelectedNotifications(prev =>
+      prev.includes(id)
         ? prev.filter(nId => nId !== id)
         : [...prev, id]
     );
@@ -247,7 +185,7 @@ const NotificationsPage: React.FC = () => {
             filteredNotifications.map((notification, index) => {
               const Icon = getNotificationIcon(notification.type);
               const colorClass = getNotificationColor(notification.type, notification.priority);
-              
+
               return (
                 <motion.div
                   key={notification.id}
@@ -273,14 +211,14 @@ const NotificationsPage: React.FC = () => {
                         <Icon className="w-6 h-6" />
                       </div>
                     )}
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className={`font-semibold ${
-                              notification.read 
-                                ? 'text-gray-700 dark:text-gray-300' 
+                              notification.read
+                                ? 'text-gray-700 dark:text-gray-300'
                                 : 'text-gray-900 dark:text-white'
                             }`}>
                               {notification.title}
@@ -292,15 +230,15 @@ const NotificationsPage: React.FC = () => {
                               <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                             )}
                           </div>
-                          
+
                           <p className={`mb-3 leading-relaxed ${
-                            notification.read 
-                              ? 'text-gray-600 dark:text-gray-400' 
+                            notification.read
+                              ? 'text-gray-600 dark:text-gray-400'
                               : 'text-gray-700 dark:text-gray-300'
                           }`}>
                             {notification.message}
                           </p>
-                          
+
                           <div className="flex items-center gap-4">
                             <span className="text-sm text-gray-500 dark:text-gray-400">
                               {notification.timestamp}
@@ -312,7 +250,7 @@ const NotificationsPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           {!notification.read && (
                             <motion.button

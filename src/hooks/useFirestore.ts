@@ -193,7 +193,7 @@ export const useRoomMessages = (roomId: string) => {
     if (!roomId) return;
 
     setLoading(true);
-    
+
     // Set up real-time listener
     const unsubscribe = FirestoreService.subscribeToRoomMessages(roomId, (newMessages) => {
       setMessages(newMessages);
@@ -229,7 +229,7 @@ export const useRoomChatMessages = (roomId: string) => {
     if (!roomId) return;
 
     setLoading(true);
-    
+
     // Set up real-time listener
     const unsubscribe = FirestoreService.subscribeToRoomMessages(roomId, (newMessages) => {
       setMessages(newMessages);
@@ -406,7 +406,7 @@ export const useNotifications = () => {
     if (!currentUser) return;
 
     setLoading(true);
-    
+
     // Set up real-time listener
     const unsubscribe = FirestoreService.subscribeToUserNotifications(currentUser.uid, (newNotifications) => {
       setNotifications(newNotifications);
@@ -439,7 +439,7 @@ export const useEnhancedPodPosts = (podId: string) => {
     if (!podId) return;
 
     setLoading(true);
-    
+
     // Set up real-time listener for pod posts
     try {
       const unsubscribe = FirestoreService.subscribeToPodPosts(podId, (newPosts) => {
@@ -483,7 +483,7 @@ export const useOnboarding = () => {
     availability: string;
   }) => {
     if (!currentUser) return;
-    
+
     try {
       setLoading(true);
       await FirestoreService.saveOnboardingResponse({
@@ -523,22 +523,8 @@ export const useAnalytics = () => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        // Mock analytics data for now
-        const mockAnalytics: UserAnalytics = {
-          userId: currentUser.uid,
-          profileViews: 127,
-          postsCreated: 8,
-          messagesPosted: 45,
-          podsJoined: 3,
-          gigsApplied: 2,
-          startupsApplied: 1,
-          completedProjects: 5,
-          earnings: 2500,
-          lastActive: new Date() as any,
-          createdAt: new Date() as any,
-          updatedAt: new Date() as any
-        };
-        setAnalytics(mockAnalytics);
+        // TODO: Implement real analytics data fetching
+        setAnalytics(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
       } finally {

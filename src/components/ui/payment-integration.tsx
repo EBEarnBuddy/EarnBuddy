@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CreditCard, 
-  DollarSign, 
-  Shield, 
-  Check, 
-  X, 
+import {
+  CreditCard,
+  DollarSign,
+  Shield,
+  Check,
+  X,
   Lock,
   AlertCircle,
   Calendar,
@@ -51,27 +51,8 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
   });
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Mock payment methods
-  const paymentMethods: PaymentMethod[] = [
-    {
-      id: '1',
-      type: 'card',
-      last4: '4242',
-      brand: 'Visa',
-      expiryMonth: 12,
-      expiryYear: 2025,
-      isDefault: true
-    },
-    {
-      id: '2',
-      type: 'card',
-      last4: '0005',
-      brand: 'Mastercard',
-      expiryMonth: 8,
-      expiryYear: 2026,
-      isDefault: false
-    }
-  ];
+  // TODO: Implement real payment methods fetching
+  const paymentMethods: PaymentMethod[] = [];
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -83,7 +64,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
   const handlePayment = async () => {
     setIsProcessing(true);
     setStep('processing');
-    
+
     // Simulate payment processing
     setTimeout(() => {
       setStep('success');
@@ -181,7 +162,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Choose Payment Method
                   </h3>
-                  
+
                   <div className="space-y-3 mb-6">
                     {paymentMethods.map(method => (
                       <button
@@ -213,7 +194,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                         </div>
                       </button>
                     ))}
-                    
+
                     <button
                       onClick={() => {
                         setSelectedMethod('new');
@@ -246,7 +227,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Card Details
                   </h3>
-                  
+
                   <div className="space-y-4 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -257,9 +238,9 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                         <input
                           type="text"
                           value={cardDetails.number}
-                          onChange={(e) => setCardDetails(prev => ({ 
-                            ...prev, 
-                            number: formatCardNumber(e.target.value) 
+                          onChange={(e) => setCardDetails(prev => ({
+                            ...prev,
+                            number: formatCardNumber(e.target.value)
                           }))}
                           placeholder="1234 5678 9012 3456"
                           maxLength={19}
@@ -278,9 +259,9 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                           <input
                             type="text"
                             value={cardDetails.expiry}
-                            onChange={(e) => setCardDetails(prev => ({ 
-                              ...prev, 
-                              expiry: formatExpiry(e.target.value) 
+                            onChange={(e) => setCardDetails(prev => ({
+                              ...prev,
+                              expiry: formatExpiry(e.target.value)
                             }))}
                             placeholder="MM/YY"
                             maxLength={5}
@@ -288,7 +269,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           CVC
@@ -298,9 +279,9 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                           <input
                             type="text"
                             value={cardDetails.cvc}
-                            onChange={(e) => setCardDetails(prev => ({ 
-                              ...prev, 
-                              cvc: e.target.value.replace(/\D/g, '').slice(0, 4) 
+                            onChange={(e) => setCardDetails(prev => ({
+                              ...prev,
+                              cvc: e.target.value.replace(/\D/g, '').slice(0, 4)
                             }))}
                             placeholder="123"
                             maxLength={4}
@@ -355,7 +336,7 @@ export const PaymentIntegration: React.FC<PaymentIntegrationProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Confirm Payment
                   </h3>
-                  
+
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />

@@ -220,48 +220,18 @@ const HeroSection: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.8 }}
             >
               <div className="flex items-center -space-x-2">
-                {/* Sample user avatars */}
-                <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=40&h=40&fit=crop&crop=face"
-                  alt="User"
-                  className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg"
-                />
+                {/* TODO: Replace with real user avatars */}
                 <div className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-900 shadow-lg bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">
-                  +2.4k
+                  +0
                 </div>
               </div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Join 2,400+ builders already on the waitlist
+                Join the waitlist to be notified when we launch
               </p>
             </motion.div>
           </motion.div>
 
-          {/* Mockup Dashboard */}
+          {/* Dashboard Preview */}
           <motion.div
             className="relative max-w-6xl mx-auto"
             style={{
@@ -309,9 +279,9 @@ const HeroSection: React.FC = () => {
 
                       <div className="space-y-4">
                         {[
-                          { name: "Builders Joined", count: "2,847", progress: 75, color: "emerald" },
-                          { name: "Startups Registered", count: "156", progress: 45, color: "blue" },
-                          { name: "Communities Formed", count: "89", progress: 90, color: "purple" }
+                          { name: "Builders Joined", count: "0", progress: 0, color: "emerald" },
+                          { name: "Startups Registered", count: "0", progress: 0, color: "blue" },
+                          { name: "Communities Formed", count: "0", progress: 0, color: "purple" }
                         ].map((stat, idx) => (
                           <motion.div
                             key={idx}
@@ -383,17 +353,17 @@ const HeroSection: React.FC = () => {
                     >
                       <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Position</h4>
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">#247</div>
+                        <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">#0</div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">in the waitlist</p>
                         <div className="mt-4 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <motion.div
                             className="h-2 bg-gradient-to-r from-emerald-500 to-lime-400 rounded-full"
                             initial={{ width: 0 }}
-                            animate={{ width: "85%" }}
+                            animate={{ width: "0%" }}
                             transition={{ duration: 1.5, delay: 1.6 }}
                           />
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">85% to early access</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">0% to early access</p>
                       </div>
                     </motion.div>
                   </div>

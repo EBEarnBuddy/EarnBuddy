@@ -15,8 +15,8 @@ const firebaseConfig = {
 
 // Check if Firebase is properly configured
 const isFirebaseConfigured = () => {
-  return firebaseConfig.apiKey && 
-         firebaseConfig.authDomain && 
+  return firebaseConfig.apiKey &&
+         firebaseConfig.authDomain &&
          firebaseConfig.projectId &&
          firebaseConfig.storageBucket &&
          firebaseConfig.messagingSenderId &&
@@ -33,33 +33,33 @@ if (isFirebaseConfigured()) {
   try {
     // Initialize Firebase
     app = initializeApp(firebaseConfig);
-    
+
     // Initialize Firebase Authentication and get a reference to the service
     auth = getAuth(app);
-    
+
     // Configure Google Provider with additional settings
     googleProvider = new GoogleAuthProvider();
     googleProvider.addScope('email');
     googleProvider.addScope('profile');
-    
+
     // Set custom parameters for better popup handling
     googleProvider.setCustomParameters({
       prompt: 'select_account'
     });
-    
+
     // Initialize Cloud Firestore and get a reference to the service
     db = getFirestore(app);
-    
+
     // Initialize Firebase Storage
     storage = getStorage(app);
-    
+
     console.log('Firebase initialized successfully');
   } catch (error) {
     console.error('Firebase initialization error:', error);
   }
 } else {
   console.warn('Firebase is not properly configured. Please update your environment variables with valid Firebase credentials.');
-  // Create mock objects to prevent undefined errors
+  // TODO: Configure Firebase properly
   auth = null;
   googleProvider = null;
   db = null;

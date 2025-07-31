@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Filter, 
-  TrendingUp, 
-  Zap, 
-  Globe, 
-  Cpu, 
-  Leaf, 
+import {
+  Users,
+  Plus,
+  Search,
+  Filter,
+  TrendingUp,
+  Zap,
+  Globe,
+  Cpu,
+  Leaf,
   DollarSign,
   Palette,
   ArrowLeft,
@@ -31,7 +31,8 @@ import {
   Image as ImageIcon,
   Smile,
   Video,
-  Edit3
+  Edit3,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useRooms } from '../hooks/useFirestore';
@@ -39,6 +40,8 @@ import { PodCard } from '../components/ui/pod-card';
 import { RoomCard } from '../components/ui/room-card';
 import { Skeleton } from '../components/ui/skeleton';
 import DashboardNavbar from '../components/DashboardNavbar';
+import CommunityPostModal from '../components/CommunityPostModal';
+import { FirestoreService } from '../lib/firestore';
 
 const CommunityPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -49,105 +52,42 @@ const CommunityPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('trending');
+  const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
-  // Mock trending topics for pods (Twitter-like)
-  const trendingTopics = [
-    { tag: '#AI', posts: 1247, trend: '+12%' },
-    { tag: '#React', posts: 892, trend: '+8%' },
-    { tag: '#Web3', posts: 634, trend: '+23%' },
-    { tag: '#Startup', posts: 445, trend: '+15%' },
-    { tag: '#Design', posts: 387, trend: '+5%' },
-    { tag: '#Climate', posts: 298, trend: '+18%' },
-    { tag: '#FinTech', posts: 234, trend: '+9%' },
-    { tag: '#Mobile', posts: 189, trend: '+7%' }
-  ];
+  // Real trending topics from pods data
+  const trendingTopics = pods.length > 0 ? pods.slice(0, 8).map(pod => ({
+    tag: `#${pod.name.replace(/\s+/g, '')}`,
+    posts: pod.postCount || 0,
+    trend: '+0%'
+  })) : [];
 
-  // Mock posts for pods (Twitter-like feed)
-  const mockPodPosts = [
-    {
-      id: '1',
-      user: {
-        name: 'Sarah Chen',
-        username: '@sarahdev',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
-        verified: true
-      },
-      content: 'Just shipped our new AI model! 🚀 Achieved 94% accuracy on the benchmark. The breakthrough came from combining transformer architectures with novel attention mechanisms. Open sourcing next week! #AI #MachineLearning',
-      image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=500&h=300&fit=crop',
-      timestamp: '2h',
-      likes: 127,
-      comments: 23,
-      shares: 15,
-      pod: 'AI Builders',
-      tags: ['#AI', '#MachineLearning']
+  // Format community posts for display
+  const formattedPosts = communityPosts.map(post => ({
+    id: post.id,
+    user: {
+      name: post.userName || 'Anonymous',
+      username: `@${post.userName?.toLowerCase().replace(/\s+/g, '') || 'user'}`,
+      avatar: post.userAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      verified: false
     },
-    {
-      id: '2',
-      user: {
-        name: 'Marcus Rodriguez',
-        username: '@marcuspm',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-        verified: false
-      },
-      content: 'Looking for collaborators on a new NLP project focused on sentiment analysis for financial markets. We\'re exploring real-time processing of news feeds and social media to predict market movements. DM me if interested! #NLP #FinTech #Collaboration',
-      timestamp: '4h',
-      likes: 89,
-      comments: 12,
-      shares: 8,
-      pod: 'FinTech Innovators',
-      tags: ['#NLP', '#FinTech', '#Collaboration']
-    },
-    {
-      id: '3',
-      user: {
-        name: 'Alex Kim',
-        username: '@alexdesign',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-        verified: true
-      },
-      content: 'New design system components are live! 🎨 Spent weeks perfecting the accessibility and dark mode support. The component library now includes 50+ components with full TypeScript support. Check it out! #Design #DesignSystems #Accessibility',
-      image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=500&h=300&fit=crop',
-      timestamp: '6h',
-      likes: 156,
-      comments: 34,
-      shares: 22,
-      pod: 'Design Systems',
-      tags: ['#Design', '#DesignSystems', '#Accessibility']
-    },
-    {
-      id: '4',
-      user: {
-        name: 'Emma Thompson',
-        username: '@emmacto',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face',
-        verified: false
-      },
-      content: 'Climate tech startup idea: AI-powered carbon footprint tracking for small businesses. Real-time monitoring, actionable insights, and automated reporting. Who\'s interested in building this together? 🌱 #Climatetech #Startup #AI',
-      timestamp: '8h',
-      likes: 203,
-      comments: 45,
-      shares: 31,
-      pod: 'Climate Tech',
-      tags: ['#Climatetech', '#Startup', '#AI']
-    },
-    {
-      id: '5',
-      user: {
-        name: 'David Park',
-        username: '@davidweb3',
-        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=40&h=40&fit=crop&crop=face',
-        verified: true
-      },
-      content: 'Just deployed our first DeFi protocol on mainnet! 🎉 After months of testing and audits, we\'re finally live. The protocol enables cross-chain yield farming with minimal gas fees. Early adopters welcome! #Web3 #DeFi #Blockchain',
-      timestamp: '12h',
-      likes: 312,
-      comments: 67,
-      shares: 89,
-      pod: 'Web3 Pioneers',
-      tags: ['#Web3', '#DeFi', '#Blockchain']
-    }
-  ];
+    content: post.content,
+    image: post.imageUrl || post.images?.[0],
+    timestamp: post.createdAt ?
+      (post.createdAt.toDate ?
+        new Date(post.createdAt.toDate()).toLocaleDateString() :
+        new Date(post.createdAt).toLocaleDateString()
+      ) : 'Just now',
+    likes: post.likes?.length || 0,
+    comments: post.comments?.length || 0,
+    shares: 0,
+    pod: post.podId === 'community' ? 'Community' : post.podId,
+    tags: post.tags || [],
+    emoji: post.emoji,
+    documents: post.documents || []
+  }));
 
   const categories = [
     { id: 'all', name: 'All', icon: Globe },
@@ -174,7 +114,7 @@ const CommunityPage: React.FC = () => {
   const filteredPods = pods.filter(pod => {
     const matchesSearch = pod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pod.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || 
+    const matchesCategory = selectedCategory === 'all' ||
                            pod.slug.includes(selectedCategory) ||
                            pod.name.toLowerCase().includes(selectedCategory) ||
                            pod.tags?.some(tag => tag.toLowerCase().includes(selectedCategory));
@@ -186,11 +126,15 @@ const CommunityPage: React.FC = () => {
     room.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPosts = mockPodPosts.filter(post => {
-    const matchesSearch = post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.user.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || 
-                           post.tags.some(tag => tag.toLowerCase().includes(selectedCategory.replace('#', '')));
+  const filteredPosts = formattedPosts.filter(post => {
+    const matchesSearch = searchTerm === '' ||
+      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (post.tags && post.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+
+    const matchesCategory = selectedCategory === 'all' ||
+      post.pod.toLowerCase().includes(selectedCategory.toLowerCase());
+
     return matchesSearch && matchesCategory;
   });
 
@@ -229,6 +173,84 @@ const CommunityPage: React.FC = () => {
     }
   };
 
+  const handlePostSuccess = async () => {
+    // Refresh posts
+    await loadCommunityPosts();
+    console.log('Post created successfully!');
+  };
+
+  const loadCommunityPosts = async () => {
+    try {
+      setPostsLoading(true);
+
+      // Load posts from localStorage first (these are always available)
+      const localPosts = JSON.parse(localStorage.getItem('localCommunityPosts') || '[]');
+      const formattedLocalPosts = localPosts.map((post: any) => ({
+        ...post,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt)
+      }));
+
+      // Try to get posts from Firestore as well
+      let firestorePosts = [];
+      try {
+        firestorePosts = await FirestoreService.getCommunityPosts();
+      } catch (firestoreError) {
+        console.error('Error loading from Firestore:', firestoreError);
+      }
+
+      // Combine posts, prioritizing local posts (they're more recent)
+      const allPosts = [...formattedLocalPosts, ...firestorePosts];
+
+      // Remove duplicates based on ID
+      const uniquePosts = allPosts.filter((post, index, self) =>
+        index === self.findIndex(p => p.id === post.id)
+      );
+
+      setCommunityPosts(uniquePosts);
+    } catch (error) {
+      console.error('Error loading community posts:', error);
+      setCommunityPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  // Load posts on component mount
+  useEffect(() => {
+    loadCommunityPosts();
+  }, []);
+
+  // Test function to add a sample post (for development)
+  const addTestPost = () => {
+    const testPost = {
+      id: `test_${Date.now()}`,
+      userId: 'test-user',
+      userName: 'Test User',
+      userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+      content: 'This is a test post to verify the community functionality is working! 🚀',
+      podId: 'community',
+      type: 'text',
+      imageUrl: undefined,
+      images: [],
+      documents: [],
+      emoji: '🚀',
+      tags: ['test', 'community'],
+      likes: [],
+      comments: [],
+      bookmarks: [],
+      reactions: {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const existingPosts = JSON.parse(localStorage.getItem('localCommunityPosts') || '[]');
+    existingPosts.unshift(testPost);
+    localStorage.setItem('localCommunityPosts', JSON.stringify(existingPosts));
+
+    loadCommunityPosts();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
 
@@ -262,15 +284,25 @@ const CommunityPage: React.FC = () => {
             </motion.button>
           </div>
 
-          <motion.button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus className="w-5 h-5" />
-            Create {activeTab === 'pods' ? 'Pod' : 'Room'}
-          </motion.button>
+          <div className="flex items-center gap-3">
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={addTestPost}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
+              >
+                Add Test Post
+              </button>
+            )}
+            <motion.button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Plus className="w-5 h-5" />
+              Create {activeTab === 'pods' ? 'Pod' : 'Room'}
+            </motion.button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -380,21 +412,29 @@ const CommunityPage: React.FC = () => {
                         className="w-10 h-10 rounded-full object-cover"
                       />
                       <div className="flex-1">
-                        <textarea
-                          placeholder="What's happening in the builder community?"
-                          className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg"
-                          rows={3}
-                        />
+                        <div
+                          onClick={() => setShowPostModal(true)}
+                          className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-lg min-h-[60px] flex items-center"
+                        >
+                          What's happening in the builder community?
+                        </div>
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-2">
-                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                            <button
+                              onClick={() => setShowPostModal(true)}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
                               <ImageIcon className="w-5 h-5 text-gray-500" />
                             </button>
-                            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                            <button
+                              onClick={() => setShowPostModal(true)}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            >
                               <Smile className="w-5 h-5 text-gray-500" />
                             </button>
                           </div>
                           <motion.button
+                            onClick={() => setShowPostModal(true)}
                             className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -407,97 +447,149 @@ const CommunityPage: React.FC = () => {
                   </div>
 
                   {/* Posts Feed */}
-                  {filteredPosts.map((post, index) => (
-                    <motion.div
-                      key={post.id}
-                      className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <div className="flex gap-3">
-                        <img
-                          src={post.user.avatar}
-                          alt={post.user.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-bold text-gray-900 dark:text-white">{post.user.name}</span>
-                            {post.user.verified && (
-                              <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs">✓</span>
+                  {postsLoading ? (
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+                          <div className="flex gap-3">
+                            <Skeleton className="w-12 h-12 rounded-full" />
+                            <div className="flex-1">
+                              <Skeleton className="h-4 w-32 mb-2" />
+                              <Skeleton className="h-4 w-24 mb-3" />
+                              <Skeleton className="h-20 w-full mb-3" />
+                              <div className="flex gap-4">
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-4 w-16" />
                               </div>
-                            )}
-                            <span className="text-gray-500 dark:text-gray-400">{post.user.username}</span>
-                            <span className="text-gray-500 dark:text-gray-400">•</span>
-                            <span className="text-gray-500 dark:text-gray-400">{post.timestamp}</span>
-                            <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
-                              {post.pod}
-                            </span>
-                          </div>
-                          
-                          <div className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed">
-                            {post.content}
-                          </div>
-
-                          {post.image && (
-                            <img
-                              src={post.image}
-                              alt="Post image"
-                              className="w-full h-64 object-cover rounded-xl mb-3 cursor-pointer hover:opacity-95 transition-opacity"
-                            />
-                          )}
-
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-6">
-                              <motion.button
-                                className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <Heart className="w-5 h-5" />
-                                <span>{post.likes}</span>
-                              </motion.button>
-                              
-                              <motion.button
-                                className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <MessageCircle className="w-5 h-5" />
-                                <span>{post.comments}</span>
-                              </motion.button>
-                              
-                              <motion.button
-                                className="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <Share2 className="w-5 h-5" />
-                                <span>{post.shares}</span>
-                              </motion.button>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <motion.button
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                                whileHover={{ scale: 1.1 }}
-                              >
-                                <Bookmark className="w-4 h-4 text-gray-500" />
-                              </motion.button>
-                              <motion.button
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                                whileHover={{ scale: 1.1 }}
-                              >
-                                <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                              </motion.button>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      ))}
+                    </div>
+                  ) : filteredPosts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No posts yet</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        {searchTerm ? 'Try adjusting your search terms' : 'Be the first to share something with the community!'}
+                      </p>
+                      <motion.button
+                        onClick={() => setShowPostModal(true)}
+                        className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Create First Post
+                      </motion.button>
+                    </div>
+                  ) : (
+                    filteredPosts.map((post, index) => (
+                      <motion.div
+                        key={post.id}
+                        className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <div className="flex gap-3">
+                          <img
+                            src={post.user.avatar}
+                            alt={post.user.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-bold text-gray-900 dark:text-white">{post.user.name}</span>
+                              {post.user.verified && (
+                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                              )}
+                              <span className="text-gray-500 dark:text-gray-400">{post.user.username}</span>
+                              <span className="text-gray-500 dark:text-gray-400">•</span>
+                              <span className="text-gray-500 dark:text-gray-400">{post.timestamp}</span>
+                              <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                                {post.pod}
+                              </span>
+                            </div>
+
+                            <div className="text-gray-800 dark:text-gray-200 mb-3 leading-relaxed">
+                              {post.emoji && <span className="text-2xl mr-2">{post.emoji}</span>}
+                              {post.content}
+                            </div>
+
+                            {post.image && (
+                              <img
+                                src={post.image}
+                                alt="Post image"
+                                className="w-full h-64 object-cover rounded-xl mb-3 cursor-pointer hover:opacity-95 transition-opacity"
+                              />
+                            )}
+
+                            {/* Documents */}
+                            {post.documents && post.documents.length > 0 && (
+                              <div className="space-y-2 mb-3">
+                                {post.documents.map((doc: any, docIndex: number) => (
+                                  <div key={docIndex} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <FileText className="w-5 h-5 text-gray-500" />
+                                    <span className="text-sm text-gray-700 dark:text-gray-300">{doc.name}</span>
+                                    <span className="text-xs text-gray-500 ml-auto">{doc.size}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                              <div className="flex items-center gap-6">
+                                <motion.button
+                                  className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors"
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  <Heart className="w-5 h-5" />
+                                  <span>{post.likes}</span>
+                                </motion.button>
+
+                                <motion.button
+                                  className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors"
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  <MessageCircle className="w-5 h-5" />
+                                  <span>{post.comments}</span>
+                                </motion.button>
+
+                                <motion.button
+                                  className="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors"
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  <Share2 className="w-5 h-5" />
+                                  <span>{post.shares}</span>
+                                </motion.button>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <motion.button
+                                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                  whileHover={{ scale: 1.1 }}
+                                >
+                                  <Bookmark className="w-4 h-4 text-gray-500" />
+                                </motion.button>
+                                <motion.button
+                                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                  whileHover={{ scale: 1.1 }}
+                                >
+                                  <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -511,7 +603,7 @@ const CommunityPage: React.FC = () => {
                       {filteredPods.slice(0, 3).map((pod, index) => {
                         const isJoined = currentUser ? pod.members.includes(currentUser.uid) : false;
                         const PodIcon = getIconForPod(pod.icon);
-                        
+
                         return (
                           <motion.div
                             key={pod.id}
@@ -550,19 +642,19 @@ const CommunityPage: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Total Posts</span>
-                        <span className="font-bold text-gray-900 dark:text-white">12.4K</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{pods.reduce((total, pod) => total + (pod.postCount || 0), 0)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Active Builders</span>
-                        <span className="font-bold text-gray-900 dark:text-white">2.8K</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{pods.reduce((total, pod) => total + (pod.memberCount || pod.members?.length || 0), 0)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Pods Created</span>
-                        <span className="font-bold text-gray-900 dark:text-white">156</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{pods.length}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">This Week</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+23%</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+0%</span>
                       </div>
                     </div>
                   </div>
@@ -593,7 +685,7 @@ const CommunityPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredRooms.map((room, index) => {
                     const isJoined = currentUser ? room.members.includes(currentUser.uid) : false;
-                    
+
                     return (
                       <motion.div
                         key={room.id}
@@ -611,7 +703,7 @@ const CommunityPage: React.FC = () => {
                             lastActivity: 'Active now',
                             gradient: 'from-emerald-500 to-emerald-600',
                             isJoined,
-                            unreadMessages: Math.floor(Math.random() * 5)
+                            unreadMessages: 0
                           }}
                           onJoin={handleJoinRoom}
                           onEnter={handleEnterRoom}
@@ -642,6 +734,13 @@ const CommunityPage: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Community Post Modal */}
+        <CommunityPostModal
+          isOpen={showPostModal}
+          onClose={() => setShowPostModal(false)}
+          onSuccess={handlePostSuccess}
+        />
       </div>
     </div>
   );

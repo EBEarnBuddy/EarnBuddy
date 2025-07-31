@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Briefcase, 
-  Rocket, 
-  MessageCircle, 
-  User, 
-  Search, 
-  Plus, 
-  TrendingUp, 
-  Star, 
+import {
+  Users,
+  Briefcase,
+  Rocket,
+  MessageCircle,
+  User,
+  Search,
+  Plus,
+  TrendingUp,
+  Star,
   Calendar,
   ArrowRight,
   Hash,
@@ -28,7 +28,7 @@ import {
   Eye
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePods, useProjects, useStartups, useAnalytics, useRecommendations, useOnboarding } from '../hooks/useFirestore';
+import { usePods, useProjects, useStartups, useAnalytics, useRecommendations, useOnboarding, useRooms } from '../hooks/useFirestore';
 import { TrendingPods } from '../components/ui/trending-pods';
 import { BuilderFeed } from '../components/ui/builder-feed';
 import { FloatingCard } from '../components/ui/floating-card';
@@ -44,6 +44,7 @@ const DiscoverPage: React.FC = () => {
   const { pods, loading: podsLoading } = usePods();
   const { projects, loading: projectsLoading } = useProjects();
   const { startups, loading: startupsLoading } = useStartups();
+  const { rooms, loading: roomsLoading } = useRooms();
   const { analytics, loading: analyticsLoading } = useAnalytics();
   const { recommendations, loading: recommendationsLoading } = useRecommendations();
   const { saveOnboardingResponse } = useOnboarding();
@@ -54,36 +55,8 @@ const DiscoverPage: React.FC = () => {
   const [showOnboarding, setShowOnboarding] = useState(!userProfile?.onboardingCompleted);
   const [showVideoCall, setShowVideoCall] = useState(false);
 
-  // Mock notifications
-  const notifications = [
-    {
-      id: '1',
-      type: 'message' as const,
-      title: 'New message from Sarah Chen',
-      message: 'Hey! I saw your profile and would love to collaborate on a project.',
-      timestamp: '2 minutes ago',
-      read: false,
-      priority: 'medium' as const
-    },
-    {
-      id: '2',
-      type: 'project' as const,
-      title: 'Project milestone completed',
-      message: 'React Dashboard project has been marked as complete.',
-      timestamp: '1 hour ago',
-      read: false,
-      priority: 'high' as const
-    },
-    {
-      id: '3',
-      type: 'payment' as const,
-      title: 'Payment received',
-      message: 'You received $2,500 for the E-commerce Platform project.',
-      timestamp: '3 hours ago',
-      read: true,
-      priority: 'medium' as const
-    }
-  ];
+  // Real notifications from user data
+  const notifications = userProfile?.notifications || [];
 
   const handleLogout = async () => {
     try {
@@ -105,7 +78,7 @@ const DiscoverPage: React.FC = () => {
 
   const handleOnboardingComplete = (data: any) => {
     console.log('Onboarding data:', data);
-    
+
     // Save onboarding data to database
     saveOnboardingResponse(data).then(() => {
       setShowOnboarding(false);
@@ -116,40 +89,40 @@ const DiscoverPage: React.FC = () => {
     });
   };
 
-  // Personalized quick actions based on user's onboarding
+    // Personalized quick actions based on user's onboarding
   const getPersonalizedQuickActions = () => {
     const baseActions = [
-      { 
-        title: 'Community Pods', 
-        description: 'Join builder communities', 
-        icon: Hash, 
-        path: '/community', 
+      {
+        title: 'Community Pods',
+        description: 'Join builder communities',
+        icon: Hash,
+        path: '/community',
         color: 'from-blue-500 to-purple-600',
-        count: pods.length
+        count: pods?.length || 0
       },
-      { 
-        title: 'Team Projects', 
-        description: 'Join project teams', 
-        icon: Briefcase, 
-        path: '/freelance', 
+      {
+        title: 'Team Projects',
+        description: 'Join project teams',
+        icon: Briefcase,
+        path: '/freelance',
         color: 'from-green-500 to-emerald-600',
-        count: projects.length
+        count: projects?.length || 0
       },
-      { 
-        title: 'Startups', 
-        description: 'Discover startup opportunities', 
-        icon: Rocket, 
-        path: '/startups', 
+      {
+        title: 'Startups',
+        description: 'Discover startup opportunities',
+        icon: Rocket,
+        path: '/startups',
         color: 'from-purple-500 to-pink-600',
-        count: startups.length
+        count: startups?.length || 0
       },
-      { 
-        title: 'Chat Rooms', 
-        description: 'Connect in real-time', 
-        icon: MessageCircle, 
-        path: '/rooms', 
+      {
+        title: 'Chat Rooms',
+        description: 'Connect in real-time',
+        icon: MessageCircle,
+        path: '/community',
         color: 'from-orange-500 to-red-600',
-        count: 12
+        count: rooms?.length || 0
       }
     ];
 
@@ -161,7 +134,7 @@ const DiscoverPage: React.FC = () => {
     } else if (userProfile?.onboardingData?.role === 'builder') {
       return [baseActions[0], baseActions[3], baseActions[1], baseActions[2]]; // Community first
     }
-    
+
     return baseActions;
   };
 
@@ -171,18 +144,18 @@ const DiscoverPage: React.FC = () => {
   const getPersonalizedStats = () => {
     if (!analytics) {
       return [
-        { label: 'Active Builders', value: '2,847', icon: Users, change: '+12%' },
-        { label: 'Projects Launched', value: '156', icon: Rocket, change: '+8%' },
-        { label: 'Successful Matches', value: '94%', icon: Target, change: '+2%' },
-        { label: 'Total Earnings', value: '$2.4M', icon: Award, change: '+15%' }
+        { label: 'Profile Views', value: '0', icon: Eye, change: '+0%' },
+        { label: 'Posts Created', value: '0', icon: MessageCircle, change: '+0%' },
+        { label: 'Pods Joined', value: '0', icon: Users, change: '+0%' },
+        { label: 'Projects Completed', value: '0', icon: Award, change: '+0%' }
       ];
     }
 
     return [
-      { label: 'Profile Views', value: analytics.profileViews.toString(), icon: Eye, change: '+12%' },
-      { label: 'Posts Created', value: analytics.postsCreated.toString(), icon: MessageCircle, change: '+8%' },
-      { label: 'Pods Joined', value: analytics.podsJoined.toString(), icon: Users, change: '+2%' },
-      { label: 'Projects Completed', value: analytics.completedProjects.toString(), icon: Award, change: '+15%' }
+      { label: 'Profile Views', value: analytics.profileViews?.toString() || '0', icon: Eye, change: '+0%' },
+      { label: 'Posts Created', value: analytics.postsCreated?.toString() || '0', icon: MessageCircle, change: '+0%' },
+      { label: 'Pods Joined', value: analytics.podsJoined?.toString() || '0', icon: Users, change: '+0%' },
+      { label: 'Projects Completed', value: analytics.completedProjects?.toString() || '0', icon: Award, change: '+0%' }
     ];
   };
 
@@ -192,15 +165,12 @@ const DiscoverPage: React.FC = () => {
   const getPersonalizedActivity = () => {
     if (!recommendations) {
       return [
-        { type: 'New Gig', title: 'Frontend Developer needed for SaaS platform', time: '2 min ago', urgent: true },
-        { type: 'Startup', title: 'HealthTech startup looking for co-founder', time: '5 min ago', urgent: false },
-        { type: 'Pod Update', title: 'AI Builders pod reached 500 members', time: '10 min ago', urgent: false },
-        { type: 'New Member', title: 'Sarah Chen joined Climate Tech pod', time: '15 min ago', urgent: false }
+        { type: 'Welcome', title: 'Complete your profile to get personalized recommendations', time: 'Now', urgent: true }
       ];
     }
 
     const activity = [];
-    
+
     // Add recommended gigs
     if (recommendations.recommendedProjects?.length > 0) {
       activity.push({
@@ -240,22 +210,6 @@ const DiscoverPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <img src="/logofinal.png" alt="EarnBuddy" className="w-10 h-10" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">EarnBuddy</h1>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <DashboardNavbar />
 
       <div className="container mx-auto px-6 py-8">
@@ -267,15 +221,15 @@ const DiscoverPage: React.FC = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}! 
+            Welcome back, {userProfile?.displayName?.split(' ')[0] || 'Builder'}!
             {userProfile?.onboardingData?.role && typeof userProfile.onboardingData.role === 'string' && (
-              <span className="text-emerald-600 dark:text-emerald-400"> 
+              <span className="text-emerald-600 dark:text-emerald-400">
                 ({userProfile.onboardingData.role.charAt(0).toUpperCase() + userProfile.onboardingData.role.slice(1)})
               </span>
             )} 👋
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            {typeof userProfile?.onboardingData?.role === 'string' && userProfile.onboardingData.role === 'freelancer' 
+            {typeof userProfile?.onboardingData?.role === 'string' && userProfile.onboardingData.role === 'freelancer'
               ? "Here are the latest freelance opportunities matching your skills."
               : typeof userProfile?.onboardingData?.role === 'string' && userProfile.onboardingData.role === 'founder'
               ? "Discover talented builders and grow your startup team."
@@ -489,7 +443,7 @@ const DiscoverPage: React.FC = () => {
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
                     Recommended for You
                   </h3>
-                  
+
                   <div className="space-y-4">
                     {recommendations.recommendedProjects?.slice(0, 2).map((project: any, index: number) => (
                       <motion.div
@@ -514,7 +468,7 @@ const DiscoverPage: React.FC = () => {
                         </div>
                       </motion.div>
                     ))}
-                    
+
                     {recommendations.recommendedPods?.slice(0, 1).map((pod: any, index: number) => (
                       <motion.div
                         key={pod.id}
@@ -549,7 +503,7 @@ const DiscoverPage: React.FC = () => {
             >
               <FloatingCard className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Progress</h3>
-                
+
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-2">
@@ -559,7 +513,7 @@ const DiscoverPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <motion.div 
+                      <motion.div
                         className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: userProfile?.onboardingCompleted ? "100%" : "85%" }}
@@ -576,7 +530,7 @@ const DiscoverPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <motion.div 
+                      <motion.div
                         className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(((analytics?.podsJoined || 0) * 20), 100)}%` }}
@@ -593,7 +547,7 @@ const DiscoverPage: React.FC = () => {
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <motion.div 
+                      <motion.div
                         className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(((analytics?.postsCreated || 0) * 10 + (analytics?.messagesPosted || 0) * 2), 100)}%` }}

@@ -1,19 +1,19 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
   setDoc,
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  onSnapshot, 
-  arrayUnion, 
-  arrayRemove, 
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  arrayUnion,
+  arrayRemove,
   increment,
   serverTimestamp,
   Timestamp,
@@ -349,7 +349,7 @@ export class FirestoreService {
 
   static async joinPod(podId: string, userId: string): Promise<void> {
     const batch = writeBatch(db);
-    
+
     // Update pod
     const podRef = doc(db, 'pods', podId);
     batch.update(podRef, {
@@ -358,20 +358,20 @@ export class FirestoreService {
       updatedAt: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
-    
+
     // Update user profile
     const userRef = doc(db, 'users', userId);
     batch.update(userRef, {
       joinedPods: arrayUnion(podId),
       updatedAt: serverTimestamp()
     });
-    
+
     await batch.commit();
   }
 
   static async leavePod(podId: string, userId: string): Promise<void> {
     const batch = writeBatch(db);
-    
+
     // Update pod
     const podRef = doc(db, 'pods', podId);
     batch.update(podRef, {
@@ -379,14 +379,14 @@ export class FirestoreService {
       memberCount: increment(-1),
       updatedAt: serverTimestamp()
     });
-    
+
     // Update user profile
     const userRef = doc(db, 'users', userId);
     batch.update(userRef, {
       joinedPods: arrayRemove(podId),
       updatedAt: serverTimestamp()
     });
-    
+
     await batch.commit();
   }
 
@@ -402,7 +402,7 @@ export class FirestoreService {
   static async createPodPost(podId: string, userId: string, content: string, imageUrl?: string): Promise<string> {
     // Get user profile for name and avatar
     const userProfile = await this.getUserProfile(userId);
-    
+
     const postData = {
       podId,
       userId,
@@ -424,11 +424,11 @@ export class FirestoreService {
     };
 
     const batch = writeBatch(db);
-    
+
     // Create post
     const postRef = doc(collection(db, 'podPosts'));
     batch.set(postRef, postData);
-    
+
     // Update pod activity
     const podRef = doc(db, 'pods', podId);
     batch.update(podRef, {
@@ -436,9 +436,79 @@ export class FirestoreService {
       lastActivity: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    
+
     await batch.commit();
     return postRef.id;
+  }
+
+  static async createCommunityPost(postData: {
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+    content: string;
+    selectedPod?: string;
+    images?: string[];
+    documents?: Array<{
+      url: string;
+      name: string;
+      type: string;
+      size: string;
+    }>;
+    emoji?: string;
+    tags?: string[];
+  }): Promise<string> {
+    try {
+      const post = {
+        userId: postData.userId,
+        userName: postData.userName,
+        userAvatar: postData.userAvatar,
+        content: postData.content,
+        podId: postData.selectedPod || 'community',
+        type: 'text' as const,
+        imageUrl: postData.images?.[0],
+        images: postData.images || [],
+        documents: postData.documents || [],
+        emoji: postData.emoji,
+        tags: postData.tags || [],
+        likes: [],
+        comments: [],
+        bookmarks: [],
+        reactions: {},
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, 'communityPosts'), post);
+
+      // If posting to a specific pod, update pod's post count
+      if (postData.selectedPod) {
+        const podRef = doc(db, 'pods', postData.selectedPod);
+        await updateDoc(podRef, {
+          messageCount: increment(1),
+          lastActivity: serverTimestamp()
+        });
+      }
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Error creating community post:', error);
+      throw error;
+    }
+  }
+
+  static async getCommunityPosts(): Promise<any[]> {
+    try {
+      const querySnapshot = await getDocs(
+        query(
+          collection(db, 'communityPosts'),
+          orderBy('createdAt', 'desc')
+        )
+      );
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting community posts:', error);
+      return [];
+    }
   }
 
   static async createPost(postData: Omit<PodPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -488,15 +558,15 @@ export class FirestoreService {
   static async addReactionToPost(postId: string, emoji: string, userId: string): Promise<void> {
     const postRef = doc(db, 'podPosts', postId);
     const postDoc = await getDoc(postRef);
-    
+
     if (postDoc.exists()) {
       const data = postDoc.data() as PodPost;
       const reactions = data.reactions || {};
-      
+
       if (!reactions[emoji]) {
         reactions[emoji] = [];
       }
-      
+
       if (!reactions[emoji].includes(userId)) {
         reactions[emoji].push(userId);
       } else {
@@ -505,8 +575,8 @@ export class FirestoreService {
           delete reactions[emoji];
         }
       }
-      
-      await updateDoc(postRef, { 
+
+      await updateDoc(postRef, {
         reactions,
         timestamp: serverTimestamp()
       });
@@ -515,21 +585,21 @@ export class FirestoreService {
 
   static async pinPost(postId: string, podId: string): Promise<void> {
     const batch = writeBatch(db);
-    
+
     // Update post
     const postRef = doc(db, 'podPosts', postId);
     batch.update(postRef, {
       isPinned: true,
       updatedAt: serverTimestamp()
     });
-    
+
     // Update pod
     const podRef = doc(db, 'pods', podId);
     batch.update(podRef, {
       pinnedMessages: arrayUnion(postId),
       updatedAt: serverTimestamp()
     });
-    
+
     await batch.commit();
   }
 
@@ -540,7 +610,7 @@ export class FirestoreService {
       reportedBy: arrayUnion(userId),
       updatedAt: serverTimestamp()
     });
-    
+
     // Create report record
     await addDoc(collection(db, 'reports'), {
       postId,
@@ -579,7 +649,7 @@ export class FirestoreService {
             where('podId', '==', podId),
             limit(50)
           );
-          
+
           return onSnapshot(simpleQ, (snapshot) => {
             const posts = snapshot.docs.map(doc => ({
               id: doc.id,
@@ -611,7 +681,7 @@ export class FirestoreService {
       orderBy('createdAt', 'desc'),
       limit(20)
     );
-    
+
     return onSnapshot(q, (snapshot) => {
       const notifications = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -677,7 +747,7 @@ export class FirestoreService {
       orderBy('timestamp', 'asc'),
       limit(100)
     );
-    
+
     return onSnapshot(q, (snapshot) => {
       const messages = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -690,15 +760,15 @@ export class FirestoreService {
   static async addReactionToChatMessage(messageId: string, emoji: string, userId: string): Promise<void> {
     const messageRef = doc(db, 'chatMessages', messageId);
     const messageDoc = await getDoc(messageRef);
-    
+
     if (messageDoc.exists()) {
       const data = messageDoc.data() as ChatMessage;
       const reactions = data.reactions || {};
-      
+
       if (!reactions[emoji]) {
         reactions[emoji] = [];
       }
-      
+
       if (!reactions[emoji].includes(userId)) {
         reactions[emoji].push(userId);
       } else {
@@ -707,7 +777,7 @@ export class FirestoreService {
           delete reactions[emoji];
         }
       }
-      
+
       await updateDoc(messageRef, { reactions });
     }
   }
@@ -738,7 +808,7 @@ export class FirestoreService {
   }): Promise<void> {
     const projectRef = doc(db, 'gigs', projectId);
     const userProfile = await this.getUserProfile(userId);
-    
+
     const application: RoleApplication = {
       userId,
       userName: userProfile?.displayName || 'Anonymous User',
@@ -793,7 +863,7 @@ export class FirestoreService {
   static async updateRoleApplicationStatus(projectId: string, roleId: string, applicationUserId: string, status: 'accepted' | 'rejected' | 'interviewing'): Promise<void> {
     const projectRef = doc(db, 'gigs', projectId);
     const projectDoc = await getDoc(projectRef);
-    
+
     if (projectDoc.exists()) {
       const projectData = projectDoc.data() as Gig;
       const updatedRoles = projectData.roles.map(role => {
@@ -819,7 +889,7 @@ export class FirestoreService {
   static async applyToGig(gigId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
     const gigRef = doc(db, 'gigs', gigId);
     const userProfile = await this.getUserProfile(userId);
-    
+
     await updateDoc(gigRef, {
       applicants: arrayUnion({
         userId,
@@ -870,7 +940,7 @@ export class FirestoreService {
   static async applyToStartup(startupId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
     const startupRef = doc(db, 'startups', startupId);
     const userProfile = await this.getUserProfile(userId);
-    
+
     await updateDoc(startupRef, {
       applicants: arrayUnion({
         userId,
