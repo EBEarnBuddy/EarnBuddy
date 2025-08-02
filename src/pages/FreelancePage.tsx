@@ -35,9 +35,12 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import DashboardNavbar from '../components/DashboardNavbar';
 import CreateProjectModal from '../components/CreateProjectModal';
-import { getProjects, Project, toggleBookmark, applyToRole } from '../lib/projectService';
+import { FirestoreService } from '../lib/firestore';
+import { Gig } from '../lib/firestore';
+import { checkAndSeedProjects } from '../lib/seedProjects';
+import AdminSeedButton from '../components/AdminSeedButton';
 
-// Using real data from API
+// Using Firestore for projects to ensure they're visible to all users
 
 const FreelancePage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -56,7 +59,7 @@ const FreelancePage: React.FC = () => {
     expectedSalary: '',
     availability: ''
   });
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,24 +88,16 @@ const FreelancePage: React.FC = () => {
     { id: 'lead', name: 'Lead/Principal' }
   ];
 
-    // Fetch projects from backend
+    // Fetch projects from Firestore
   const fetchProjects = async () => {
     try {
       setLoading(true);
       setError(null);
-      const filters = {
-        search: searchTerm,
-        industry: selectedIndustry !== 'all' ? selectedIndustry : undefined,
-        projectType: selectedType !== 'all' ? selectedType : undefined,
-        experience: selectedExperience !== 'all' ? selectedExperience : undefined
-      };
 
-      const response = await getProjects(filters);
-      if (response.success) {
-        setProjects(response.data);
-      }
-    } catch (err: any) {
-      console.log('Backend not available:', err.message);
+      const fetchedProjects = await FirestoreService.getProjects();
+      setProjects(fetchedProjects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
       setError('Failed to load projects. Please try again later.');
     } finally {
       setLoading(false);
@@ -111,10 +106,22 @@ const FreelancePage: React.FC = () => {
 
   // Load projects on component mount and when filters change
   useEffect(() => {
-    fetchProjects();
+    const initializeProjects = async () => {
+      // First check and seed projects if needed
+      await checkAndSeedProjects();
+      // Then fetch all projects
+      await fetchProjects();
+    };
+
+    initializeProjects();
   }, [searchTerm, selectedIndustry, selectedType, selectedExperience]);
 
   const filteredProjects = projects.filter(project => {
+    // Ensure project has required properties
+    if (!project.title || !project.description || !project.company || !project.roles) {
+      return false;
+    }
+
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           project.company.toLowerCase().includes(searchTerm.toLowerCase());
@@ -126,8 +133,13 @@ const FreelancePage: React.FC = () => {
   });
 
   const handleApplyToRole = async (projectId: string, roleId: string) => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
     try {
-      await applyToRole(projectId, roleId, applicationData);
+      await FirestoreService.applyToRole(projectId, roleId, currentUser.uid, applicationData);
       setShowApplicationModal(false);
       setApplicationData({ coverLetter: '', portfolio: '', expectedSalary: '', availability: '' });
       setSelectedRole(null);
@@ -135,17 +147,22 @@ const FreelancePage: React.FC = () => {
       alert('Application submitted successfully!');
     } catch (error: any) {
       console.error('Error applying to role:', error);
-      alert(error.response?.data?.message || 'Failed to submit application');
+      alert(error.message || 'Failed to submit application');
     }
   };
 
   const handleBookmarkProject = async (projectId: string) => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
     try {
-      await toggleBookmark(projectId);
+      await FirestoreService.bookmarkProject(projectId, currentUser.uid);
       // Refresh projects to update bookmark status
       fetchProjects();
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
+      console.error('Error bookmarking project:', error);
     }
   };
 
@@ -291,299 +308,130 @@ const FreelancePage: React.FC = () => {
             <AnimatePresence>
               {filteredProjects.map((project, index) => (
                 <motion.div
-                  key={project._id}
-                  className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  key={project.id}
+                  className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  whileHover={{ y: -4 }}
                 >
-                  {/* Project Header */}
-                  <div className="p-8 border-b border-gray-100 dark:border-gray-700">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                            <Building className="w-8 h-8 text-white" />
-                          </div>
-                          <div>
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                              {project.title}
-                            </h2>
-                            <div className="flex items-center gap-4">
-                              <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                                {project.company}
-                              </span>
-                              <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
-                                {project.industry}
-                              </span>
-                              <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">
-                                {project.projectType}
-                              </span>
-                              {project.featured && (
-                                <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full text-sm font-medium flex items-center gap-1">
-                                  <Star className="w-3 h-3" />
-                                  Featured
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed mb-6">
-                          {project.description}
-                        </p>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <DollarSign className="w-5 h-5" />
-                            <div>
-                              <p className="text-sm">Total Budget</p>
-                              <p className="font-semibold text-gray-900 dark:text-white">
-                                {typeof project.totalBudget === 'object' && project.totalBudget.min && project.totalBudget.max
-                                  ? `$${project.totalBudget.min.toLocaleString()} - $${project.totalBudget.max.toLocaleString()}`
-                                  : typeof project.totalBudget === 'string'
-                                  ? project.totalBudget
-                                  : 'Budget not specified'
-                                }
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <Clock className="w-5 h-5" />
-                            <div>
-                              <p className="text-sm">Duration</p>
-                              <p className="font-semibold text-gray-900 dark:text-white">{project.duration}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <MapPin className="w-5 h-5" />
-                            <div>
-                              <p className="text-sm">Location</p>
-                              <p className="font-semibold text-gray-900 dark:text-white">
-                                {project.remote ? 'Remote' : project.location}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <Users className="w-5 h-5" />
-                            <div>
-                              <p className="text-sm">Applicants</p>
-                              <p className="font-semibold text-gray-900 dark:text-white">{project.totalApplicants}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {project.equity && (
-                          <div className="flex items-center gap-4 mb-4">
-                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                              <TrendingUp className="w-5 h-5" />
-                              <span className="font-semibold">Equity: {project.equity}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {project.tags.map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                        <Building className="w-6 h-6 text-white" />
                       </div>
-
-                      <div className="flex flex-col gap-3">
-                        <motion.button
-                          onClick={() => handleBookmarkProject(project._id)}
-                          className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Bookmark className="w-6 h-6 text-gray-400 hover:text-emerald-600" />
-                        </motion.button>
-                        <motion.button
-                          className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Share2 className="w-6 h-6 text-gray-400 hover:text-blue-600" />
-                        </motion.button>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{project.title}</h3>
+                        <p className="text-gray-600 dark:text-gray-400">{project.company}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          project.status === 'open'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {project.status === 'open' ? 'Actively Hiring' : project.status}
+                    <div className="flex items-center gap-2">
+                      {project.featured && (
+                        <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs rounded-full">
+                          Featured
                         </span>
-                        <span className={`text-sm font-medium ${getPriorityColor(project.urgency)}`}>
-                          {project.urgency.charAt(0).toUpperCase() + project.urgency.slice(1)} Priority
-                        </span>
-                      </div>
-
+                      )}
                       <motion.button
-                        onClick={() => setExpandedProject(expandedProject === project._id ? null : project._id)}
-                        className="flex items-center gap-2 px-4 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors font-medium"
-                        whileHover={{ scale: 1.05 }}
+                        onClick={() => handleBookmarkProject(project.id!)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        whileHover={{ scale: 1.1 }}
                       >
-                        View {project.roles.length} Open Roles
-                        {expandedProject === project._id ? (
-                          <ChevronUp className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
+                        <Bookmark className="w-5 h-5 text-gray-500" />
                       </motion.button>
                     </div>
                   </div>
 
-                  {/* Roles Section */}
-                  <AnimatePresence>
-                    {expandedProject === project._id && (
-                      <motion.div
-                        className="p-8 bg-gray-50 dark:bg-gray-800"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                          Open Roles ({project.roles.length})
-                        </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+                    {project.description}
+                  </p>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {project.roles.map((role, roleIndex) => {
-                            const hasApplied = false; // TODO: Implement application tracking
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {project.totalBudget}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{project.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {project.remote ? 'Remote' : project.location}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {project.roles?.length || 0} roles
+                      </span>
+                    </div>
+                  </div>
 
-                            return (
-                              <motion.div
-                                key={role._id}
-                                className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-500 transition-all duration-300"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: roleIndex * 0.1 }}
-                                whileHover={{ y: -2 }}
-                              >
-                                <div className="flex items-start justify-between mb-4">
-                                  <div className="flex-1">
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                      {role.title}
-                                    </h4>
-                                    <div className="flex items-center gap-2 mb-3">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience || '')}`}>
-                                        {(role.experience || '').charAt(0).toUpperCase() + (role.experience || '').slice(1)} Level
-                                      </span>
-                                      <span className={`text-sm font-medium ${getPriorityColor(role.priority || 'medium')}`}>
-                                        {(role.priority || 'medium').charAt(0).toUpperCase() + (role.priority || 'medium').slice(1)} Priority
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {role.filled && (
-                                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-sm">
-                                      Filled
-                                    </span>
-                                  )}
-                                </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      project.urgency === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      project.urgency === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    }`}>
+                      {project.urgency} priority
+                    </span>
+                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                      {project.industry}
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                      {project.projectType}
+                    </span>
+                  </div>
 
-                                <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                                  {role.description}
-                                </p>
-
-                                <div className="space-y-4 mb-6">
-                                  <div>
-                                    <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Key Skills</h5>
-                                    <div className="flex flex-wrap gap-2">
-                                      {role.skills.slice(0, 4).map((skill, skillIndex) => (
-                                        <span
-                                          key={skillIndex}
-                                          className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm rounded-full"
-                                        >
-                                          {skill}
-                                        </span>
-                                      ))}
-                                      {role.skills.length > 4 && (
-                                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm rounded-full">
-                                          +{role.skills.length - 4} more
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Salary Range</h5>
-                                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                                      {typeof role.salary === 'object' && role.salary.min && role.salary.max
-                                        ? `$${role.salary.min.toLocaleString()} - $${role.salary.max.toLocaleString()}`
-                                        : typeof role.salary === 'string'
-                                        ? role.salary
-                                        : 'Salary not specified'
-                                      }
-                                    </p>
-                                  </div>
-
-                                  {role.equity && (
-                                    <div>
-                                      <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Equity</h5>
-                                      <p className="text-emerald-600 dark:text-emerald-400">{role.equity}</p>
-                                    </div>
-                                  )}
-
-                                  {role.benefits && role.benefits.length > 0 && (
-                                    <div>
-                                      <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Benefits</h5>
-                                      <div className="flex flex-wrap gap-2">
-                                        {role.benefits.slice(0, 3).map((benefit, benefitIndex) => (
-                                          <span
-                                            key={benefitIndex}
-                                            className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm rounded-full"
-                                          >
-                                            {benefit}
-                                          </span>
-                                        ))}
-                                        {role.benefits.length > 3 && (
-                                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm rounded-full">
-                                            +{role.benefits.length - 3} more
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex gap-3">
-                                  {!hasApplied && !role.filled ? (
-                                    <motion.button
-                                      onClick={() => openApplicationModal(project._id, role._id)}
-                                      className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                    >
-                                      Apply Now
-                                    </motion.button>
-                                  ) : hasApplied ? (
-                                    <button className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold rounded-xl cursor-not-allowed">
-                                      Applied
-                                    </button>
-                                  ) : (
-                                    <button className="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold rounded-xl cursor-not-allowed">
-                                      Position Filled
-                                    </button>
-                                  )}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
+                  <div className="space-y-3">
+                    {project.roles?.map((role, roleIndex) => (
+                      <div key={role.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{role.title}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getExperienceBadgeColor(role.experience)}`}>
+                            {role.experience}
+                          </span>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{role.description}</p>
+
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {role.skills?.slice(0, 3).map((skill, skillIndex) => (
+                            <span key={skillIndex} className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {role.skills && role.skills.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded text-xs">
+                              +{role.skills.length - 3} more
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Budget: {role.budget}
+                            </span>
+                            {role.equity && (
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                Equity: {role.equity}
+                              </span>
+                            )}
+                          </div>
+                          <motion.button
+                            onClick={() => openApplicationModal(project.id || '', role.id)}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Apply
+                          </motion.button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -737,6 +585,9 @@ const FreelancePage: React.FC = () => {
           fetchProjects();
         }}
       />
+
+      {/* Admin Seed Button - Only show in development */}
+      {process.env.NODE_ENV === 'development' && <AdminSeedButton />}
     </div>
   );
 };

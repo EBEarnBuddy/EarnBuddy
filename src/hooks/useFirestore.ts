@@ -403,17 +403,38 @@ export const useNotifications = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
+    setError(null);
 
-    // Set up real-time listener
-    const unsubscribe = FirestoreService.subscribeToUserNotifications(currentUser.uid, (newNotifications) => {
-      setNotifications(newNotifications);
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
       setLoading(false);
-    });
+      console.log('Notifications loading timeout - no notifications found');
+    }, 3000); // 3 second timeout
 
-    return () => unsubscribe();
+    try {
+      // Set up real-time listener
+      const unsubscribe = FirestoreService.subscribeToUserNotifications(currentUser.uid, (newNotifications) => {
+        clearTimeout(timeoutId);
+        setNotifications(newNotifications || []);
+        setLoading(false);
+      });
+
+      return () => {
+        clearTimeout(timeoutId);
+        unsubscribe();
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error('Error setting up notifications subscription:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load notifications');
+      setLoading(false);
+    }
   }, [currentUser]);
 
   const markAsRead = async (notificationId: string) => {
