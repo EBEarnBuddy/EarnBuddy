@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
-  Target, 
+import {
+  TrendingUp,
+  Users,
+  DollarSign,
+  Target,
   Calendar,
   BarChart3,
   PieChart,
@@ -20,7 +20,7 @@ import { useAnalytics } from '../../hooks/useFirestore';
 export const AnalyticsDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const { analytics, loading } = useAnalytics();
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -74,7 +74,7 @@ export const AnalyticsDashboard: React.FC = () => {
             Track your platform's performance and growth metrics
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {timeRanges.map(range => (
             <button
@@ -206,14 +206,14 @@ export const AnalyticsDashboard: React.FC = () => {
                 Last {timeRange}
               </div>
             </div>
-            
-            {/* Mock Chart - Replace with actual chart library */}
+
+            {/* TODO: Replace with actual chart library */}
             <div className="h-64 bg-gradient-to-t from-emerald-50 to-transparent dark:from-emerald-900/20 rounded-lg flex items-end justify-between p-4">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div
                   key={i}
                   className="bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t"
-                  style={{ 
+                  style={{
                     height: `${Math.min((analytics.profileViews / 10) + (i * 5), 80) + 20}%`,
                     width: '12%'
                   }}
@@ -236,7 +236,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 User Activity
               </h3>
             </div>
-            
+
             <div className="space-y-4">
               {[
                 { label: 'Pods Joined', value: Math.min((analytics.podsJoined / 5) * 100, 100), color: 'bg-blue-500' },
@@ -275,7 +275,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <Clock className="w-5 h-5 text-emerald-600" />
             Recent Activity
           </h3>
-          
+
           <div className="space-y-4">
             {[
               { icon: Award, text: `You completed ${analytics.completedProjects} projects`, time: '2 minutes ago', type: 'success' },
@@ -286,8 +286,8 @@ export const AnalyticsDashboard: React.FC = () => {
             ].map((activity, index) => (
               <div key={index} className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  activity.type === 'success' 
-                    ? 'bg-green-100 dark:bg-green-900/30' 
+                  activity.type === 'success'
+                    ? 'bg-green-100 dark:bg-green-900/30'
                     : 'bg-blue-100 dark:bg-blue-900/30'
                 }`}>
                   <activity.icon className={`w-5 h-5 ${

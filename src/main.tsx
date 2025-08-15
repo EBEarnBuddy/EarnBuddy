@@ -13,7 +13,7 @@ import StartupsPage from './pages/StartupsPage.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import RoomsPage from './pages/RoomsPage.tsx';
 import RoomChatPage from './pages/RoomChatPage.tsx';
-import NotificationsPage from './pages/NotificationsPage.tsx';
+
 import SettingsPage from './pages/SettingsPage.tsx';
 import './index.css';
 
@@ -24,53 +24,59 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           {/* Landing page - only accessible when not logged in */}
           <Route path="/" element={<App />} />
-          
+
           {/* Auth page */}
           <Route path="/auth" element={<AuthPage />} />
-          
+
           {/* Protected routes */}
           <Route path="/discover" element={
             <ProtectedRoute>
               <DiscoverPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/community" element={
             <ProtectedRoute>
               <CommunityPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/freelance" element={
             <ProtectedRoute>
               <FreelancePage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/startups" element={
             <ProtectedRoute>
               <StartupsPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/profile" element={
             <ProtectedRoute>
               <ProfilePage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/rooms" element={
             <ProtectedRoute>
               <RoomsPage />
             </ProtectedRoute>
           } />
-          
+
           <Route path="/room/:roomId" element={
             <ProtectedRoute>
               <RoomChatPage />
             </ProtectedRoute>
           } />
-          
+
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
+
           {/* Catch all route - redirect to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

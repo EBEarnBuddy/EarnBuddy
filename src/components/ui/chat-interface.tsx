@@ -11,10 +11,10 @@ interface ChatInterfaceProps {
   onlineMembers: number;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
-  roomName, 
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  roomName,
   roomId,
-  members, 
+  members,
   onlineMembers
 }) => {
   const [newMessage, setNewMessage] = useState('');
@@ -38,15 +38,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSendMessage = () => {
     if (!currentUser || !newMessage.trim()) return;
-    
+
     try {
       if (selectedFile) {
         // Handle file upload
-        const fileType = selectedFile.type.startsWith('image/') ? 'image' : 
+        const fileType = selectedFile.type.startsWith('image/') ? 'image' :
                         selectedFile.type.startsWith('video/') ? 'video' : 'file';
-        
-        sendMessage(newMessage || `Shared a ${fileType}`, currentUser.uid, 
-          userProfile?.displayName || currentUser.displayName || 'Anonymous', 
+
+        sendMessage(newMessage || `Shared a ${fileType}`, currentUser.uid,
+          userProfile?.displayName || currentUser.displayName || 'Anonymous',
           userProfile?.photoURL || currentUser.photoURL || '', fileType, {
           file: selectedFile,
           url: previewUrl,
@@ -57,7 +57,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setSelectedFile(null);
         setPreviewUrl(null);
       } else {
-        sendMessage(newMessage, currentUser.uid, 
+        sendMessage(newMessage, currentUser.uid,
           userProfile?.displayName || currentUser.displayName || 'Anonymous',
           userProfile?.photoURL || currentUser.photoURL || '');
       }
@@ -77,7 +77,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleFileSelect = (type: 'image' | 'video' | 'file') => {
     const input = document.createElement('input');
     input.type = 'file';
-    
+
     switch (type) {
       case 'image':
         input.accept = 'image/*';
@@ -89,7 +89,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         input.accept = '*/*';
         break;
     }
-    
+
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -101,7 +101,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setShowMediaOptions(false);
       }
     };
-    
+
     input.click();
   };
 
@@ -162,7 +162,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           />
           <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
@@ -172,7 +172,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {formatTimestamp(message.timestamp)}
             </span>
           </div>
-          
+
           <div className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-2">
             {message.content}
           </div>
@@ -253,7 +253,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
     </motion.div>
   );
-    
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Chat Header */}
@@ -270,7 +270,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowVideoCall(true)}
@@ -349,7 +349,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
-            
+
             {/* Media Options */}
             <AnimatePresence>
               {showMediaOptions && (
@@ -384,7 +384,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
             </AnimatePresence>
           </div>
-          
+
           <div className="flex-1 relative">
             <textarea
               value={newMessage}
@@ -399,7 +399,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <Smile className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
-          
+
           <button
             onClick={handleSendMessage}
             disabled={!newMessage.trim() && !selectedFile}
@@ -428,7 +428,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <p className="text-sm text-gray-300">{onlineMembers} participants</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
                   <Monitor className="w-5 h-5" />
@@ -471,16 +471,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         alt="Participant"
                         className="w-24 h-24 rounded-full mx-auto mb-4"
                       />
-                      <p className="text-white">Sarah Chen</p>
+                      <p className="text-white">User</p>
                     </div>
                   </div>
                   <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-lg">
-                    <span className="text-white text-sm font-medium">Sarah Chen</span>
+                    <span className="text-white text-sm font-medium">User</span>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             {/* Video Controls */}
             <div className="p-4 bg-gray-800 flex items-center justify-center gap-4">
               <button className="p-4 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition-colors">
@@ -521,7 +521,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <p className="text-sm text-gray-600 dark:text-gray-400">Draw, brainstorm, and collaborate in real-time</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <button className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
                   Save Board
@@ -534,7 +534,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </button>
               </div>
             </div>
-            
+
             {/* Whiteboard Canvas */}
             <div className="flex-1 relative bg-white dark:bg-gray-800">
               <div className="absolute inset-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
@@ -546,7 +546,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Whiteboard Tools */}
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center justify-center gap-4">

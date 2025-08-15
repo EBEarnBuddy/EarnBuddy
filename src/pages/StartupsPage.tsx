@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Search, 
-  Filter, 
-  Plus, 
-  MapPin, 
-  Users, 
-  TrendingUp, 
-  Star, 
+import {
+  ArrowLeft,
+  Search,
+  Filter,
+  Plus,
+  MapPin,
+  Users,
+  TrendingUp,
+  Star,
   Bookmark,
   ExternalLink,
   Rocket,
@@ -21,6 +21,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useStartups } from '../hooks/useFirestore';
 import { Skeleton } from '../components/ui/skeleton';
 import DashboardNavbar from '../components/DashboardNavbar';
+import CreateStartupModal from '../components/CreateStartupModal';
+import StartupApplicationModal from '../components/StartupApplicationModal';
 
 const StartupsPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -30,6 +32,8 @@ const StartupsPage: React.FC = () => {
   const [selectedIndustry, setSelectedIndustry] = useState('all');
   const [selectedStage, setSelectedStage] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [selectedStartup, setSelectedStartup] = useState<any>(null);
 
   const industries = [
     { id: 'all', name: 'All Industries', icon: Building },
@@ -51,23 +55,16 @@ const StartupsPage: React.FC = () => {
   const filteredStartups = startups.filter(startup => {
     const matchesSearch = startup.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          startup.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesIndustry = selectedIndustry === 'all' || 
+    const matchesIndustry = selectedIndustry === 'all' ||
                            startup.industry.toLowerCase().includes(selectedIndustry);
-    const matchesStage = selectedStage === 'all' || 
+    const matchesStage = selectedStage === 'all' ||
                         startup.stage.toLowerCase().replace(/\s+/g, '-').includes(selectedStage);
     return matchesSearch && matchesIndustry && matchesStage;
   });
 
-  const handleApplyToStartup = async (startupId: string) => {
-    if (!currentUser) return;
-    try {
-      await applyToStartup(startupId, currentUser.uid, {
-        coverLetter: 'I am excited about this opportunity and would love to contribute to your mission.',
-        portfolio: 'https://myportfolio.com'
-      });
-    } catch (error) {
-      console.error('Error applying to startup:', error);
-    }
+  const handleApplyToStartup = (startup: any) => {
+    setSelectedStartup(startup);
+    setShowApplicationModal(true);
   };
 
   const handleBookmarkStartup = async (startupId: string) => {
@@ -186,7 +183,7 @@ const StartupsPage: React.FC = () => {
             <AnimatePresence>
               {filteredStartups.map((startup, index) => {
                 const hasApplied = currentUser ? startup.applicants.some(app => app.userId === currentUser.uid) : false;
-                
+
                 return (
                   <motion.div
                     key={startup.id}
@@ -246,7 +243,7 @@ const StartupsPage: React.FC = () => {
                         <span>{startup.applicantCount || startup.applicants.length} applicants</span>
                       </div>
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        startup.status === 'active' 
+                        startup.status === 'active'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                       }`}>
@@ -276,7 +273,7 @@ const StartupsPage: React.FC = () => {
 
                       <div className="flex gap-3">
                         <motion.button
-                          onClick={() => handleApplyToStartup(startup.id!)}
+                          onClick={() => handleApplyToStartup(startup)}
                           disabled={hasApplied}
                           className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
                             hasApplied
@@ -324,38 +321,28 @@ const StartupsPage: React.FC = () => {
       </div>
 
       {/* Create Startup Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCreateModal(false)}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">List Your Startup</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Startup listing is coming soon! For now, browse and apply to existing opportunities.
-              </p>
-              <motion.button
-                onClick={() => setShowCreateModal(false)}
-                className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Got it
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CreateStartupModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          setShowCreateModal(false);
+          // Refresh the startups list
+          window.location.reload();
+        }}
+      />
+
+      {/* Startup Application Modal */}
+      <StartupApplicationModal
+        isOpen={showApplicationModal}
+        onClose={() => setShowApplicationModal(false)}
+        startup={selectedStartup}
+        onSuccess={() => {
+          setShowApplicationModal(false);
+          setSelectedStartup(null);
+          // Refresh the startups list
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };

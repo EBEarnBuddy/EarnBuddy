@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Search, 
-  Plus, 
-  Hash, 
-  Lock, 
-  Globe, 
-  Users, 
+import {
+  ArrowLeft,
+  Search,
+  Plus,
+  Hash,
+  Lock,
+  Globe,
+  Users,
   MessageCircle,
   Clock,
   Star
@@ -38,7 +38,7 @@ const RoomsPage: React.FC = () => {
 
   const handleCreateRoom = async () => {
     if (!newRoom.name.trim() || !currentUser) return;
-    
+
     try {
       await createRoom({
         name: newRoom.name,
@@ -134,7 +134,7 @@ const RoomsPage: React.FC = () => {
             <AnimatePresence>
               {filteredRooms.map((room, index) => {
                 const isJoined = currentUser ? room.members.includes(currentUser.uid) : false;
-                
+
                 return (
                   <motion.div
                     key={room.id}
@@ -153,7 +153,7 @@ const RoomsPage: React.FC = () => {
                         lastActivity: 'Active now',
                         gradient: 'from-emerald-500 to-emerald-600',
                         isJoined,
-                        unreadMessages: Math.floor(Math.random() * 5) // Mock unread count
+                        unreadMessages: 0
                       }}
                       onJoin={handleJoinRoom}
                       onEnter={handleEnterRoom}
@@ -202,7 +202,7 @@ const RoomsPage: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Room</h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

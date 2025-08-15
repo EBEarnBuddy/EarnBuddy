@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  Users, 
-  Plus, 
-  X, 
-  MapPin, 
-  Link, 
+import {
+  Calendar,
+  Clock,
+  Video,
+  Users,
+  Plus,
+  X,
+  MapPin,
+  Link,
   Bell,
   Copy,
   Send,
@@ -120,7 +120,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
             {upcomingMeetings.length} upcoming • {ongoingMeetings.length} ongoing
           </p>
         </div>
-        
+
         <motion.button
           onClick={() => setShowScheduleModal(true)}
           className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2"
@@ -178,7 +178,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
       <div className="space-y-3 max-h-64 overflow-y-auto">
         {upcomingMeetings.map((meeting, index) => {
           const TypeIcon = getMeetingTypeIcon(meeting.type);
-          
+
           return (
             <motion.div
               key={meeting.id}
@@ -191,7 +191,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
                   <TypeIcon className="w-5 h-5 text-emerald-600 mt-1" />
-                  
+
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-semibold text-gray-900 dark:text-white">{meeting.title}</h4>
@@ -199,9 +199,9 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
                         {meeting.status}
                       </span>
                     </div>
-                    
+
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{meeting.description}</p>
-                    
+
                     <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
@@ -218,7 +218,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <motion.button
                     className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -273,7 +273,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -426,7 +426,7 @@ export const MeetingScheduler: React.FC<MeetingSchedulerProps> = ({
                     <div className="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <span className="text-2xl font-bold">SC</span>
                     </div>
-                    <p>Sarah Chen</p>
+                    <p>User</p>
                   </div>
                 </div>
               </div>

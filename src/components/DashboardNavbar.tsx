@@ -1,30 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Bell, 
-  BarChart3, 
-  Video, 
-  ChevronDown, 
-  User, 
-  Settings, 
+import {
+  Bell,
+  BarChart3,
+  Video,
+  ChevronDown,
+  User,
+  Settings,
   LogOut,
   MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../hooks/useFirestore';
+import NotificationDropdown from './NotificationDropdown';
 
 const DashboardNavbar: React.FC = () => {
   const { currentUser, userProfile, logout } = useAuth();
+  const { unreadCount, notifications } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+
+  // Initialize total unread count
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setTotalUnreadCount(unreadCount);
+    } else {
+      // Get unread count from localStorage for mock notifications
+      try {
+        const savedNotifications = localStorage.getItem('mockNotifications');
+        if (savedNotifications) {
+          const parsedNotifications = JSON.parse(savedNotifications);
+          const unreadCount = parsedNotifications.filter((n: any) => !n.read).length;
+          setTotalUnreadCount(unreadCount);
+        } else {
+          // Default to 2 unread if no saved data
+          setTotalUnreadCount(2);
+        }
+      } catch (error) {
+        console.error('Error loading unread count from localStorage:', error);
+        setTotalUnreadCount(2);
+      }
+    }
+  }, [notifications.length, unreadCount]);
 
   const navItems = [
     { name: 'Discover', path: '/discover' },
     { name: 'Freelance', path: '/freelance' },
     { name: 'Startups', path: '/startups' },
-    { name: 'Community', path: '/community' },
-    { name: 'Rooms', path: '/rooms' }
+    { name: 'Community', path: '/community' }
   ];
 
   const handleLogout = async () => {
@@ -46,7 +73,7 @@ const DashboardNavbar: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             {/* Logo */}
-            <motion.div 
+            <motion.div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => navigate('/discover')}
               whileHover={{ scale: 1.05 }}
@@ -76,26 +103,36 @@ const DashboardNavbar: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Video Call Button */}
-            <motion.button
-              onClick={() => navigate('/rooms')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              whileHover={{ scale: 1.05 }}
-            >
-              <Video className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-            </motion.button>
-
             {/* Messages Button */}
             <motion.button
-              onClick={() => navigate('/rooms')}
+              onClick={() => navigate('/community')}
               className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               whileHover={{ scale: 1.05 }}
             >
               <MessageCircle className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-xs rounded-full flex items-center justify-center">
-                2
-              </span>
             </motion.button>
+
+            {/* Notifications Button */}
+            <div className="relative">
+              <motion.button
+                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                whileHover={{ scale: 1.05 }}
+              >
+                                 <Bell className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                 {totalUnreadCount > 0 && (
+                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center">
+                     {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                   </span>
+                 )}
+              </motion.button>
+
+                             <NotificationDropdown
+                 isOpen={showNotificationDropdown}
+                 onClose={() => setShowNotificationDropdown(false)}
+                 onUnreadCountChange={setTotalUnreadCount}
+               />
+            </div>
 
             {/* Profile Dropdown */}
             <div className="relative">
@@ -145,16 +182,20 @@ const DashboardNavbar: React.FC = () => {
                       <motion.button
                         onClick={() => {
                           setShowProfileDropdown(false);
-                          navigate('/notifications');
+                          setShowNotificationDropdown(true);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         whileHover={{ x: 5 }}
                       >
-                        <Bell className="w-4 h-4" />
-                        <span>Notifications</span>
-                        <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+                                                 <Bell className="w-4 h-4" />
+                         <span>Notifications</span>
+                         {totalUnreadCount > 0 && (
+                           <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                             {totalUnreadCount}
+                           </span>
+                         )}
                       </motion.button>
-                      
+
                       <motion.button
                         onClick={() => {
                           setShowProfileDropdown(false);
@@ -166,7 +207,7 @@ const DashboardNavbar: React.FC = () => {
                         <User className="w-4 h-4" />
                         Profile & Analytics
                       </motion.button>
-                      
+
                       <motion.button
                         onClick={() => {
                           setShowProfileDropdown(false);
@@ -179,7 +220,7 @@ const DashboardNavbar: React.FC = () => {
                         Settings
                       </motion.button>
                     </div>
-                    
+
                     <div className="border-t border-gray-200 dark:border-gray-700">
                       <motion.button
                         onClick={() => {
@@ -218,11 +259,14 @@ const DashboardNavbar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Click outside to close dropdown */}
-      {showProfileDropdown && (
+      {/* Click outside to close dropdowns */}
+      {(showProfileDropdown || showNotificationDropdown) && (
         <div
           className="fixed inset-0 z-30"
-          onClick={() => setShowProfileDropdown(false)}
+          onClick={() => {
+            setShowProfileDropdown(false);
+            setShowNotificationDropdown(false);
+          }}
         />
       )}
     </header>

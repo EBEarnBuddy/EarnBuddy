@@ -23,7 +23,7 @@ const RoomChatPage: React.FC = () => {
   const room = rooms.find(r => r.id === roomId);
   const isMember = currentUser && room ? room.members.includes(currentUser.uid) : false;
 
-  // Mock data for timeline and meetings
+  // TODO: Implement timeline and meetings data
   const timelineItems = [
     {
       id: '1',
@@ -81,7 +81,7 @@ const RoomChatPage: React.FC = () => {
 
   const handleSendMessage = async (content: string, type?: 'text' | 'image' | 'video' | 'file', attachment?: any) => {
     if (!currentUser) return;
-    
+
     try {
       await sendMessage(content, currentUser.uid, type, attachment);
     } catch (error) {
@@ -157,48 +157,7 @@ const RoomChatPage: React.FC = () => {
     );
   }
 
-  // Mock messages for demo
-  const mockMessages = [
-    {
-      id: '1',
-      user: {
-        name: 'Sarah Chen',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face',
-        isOnline: true,
-        role: 'Developer'
-      },
-      content: 'Hey everyone! Just pushed the latest updates to the project repo. The new authentication system is working great!',
-      timestamp: '2:30 PM'
-    },
-    {
-      id: '2',
-      user: {
-        name: 'Marcus Rodriguez',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-        isOnline: true,
-        role: 'Product Manager'
-      },
-      content: 'Awesome work Sarah! I tested it on my end and everything looks smooth. Ready for the demo tomorrow?',
-      timestamp: '2:32 PM'
-    },
-    {
-      id: '3',
-      user: {
-        name: 'Alex Kim',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-        isOnline: false,
-        role: 'Designer'
-      },
-      content: 'I\'ve updated the design mockups based on yesterday\'s feedback. Check them out when you get a chance!',
-      timestamp: '2:35 PM',
-      type: 'image' as const,
-      attachment: {
-        url: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=300&fit=crop',
-        name: 'design-mockups.png',
-        type: 'image/png'
-      }
-    }
-  ];
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -221,7 +180,7 @@ const RoomChatPage: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">{room.name}</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">{room.members.length} members</p>
             </div>
-            
+
             {/* Room Tools */}
             <div className="ml-auto flex items-center gap-2">
               <motion.button
@@ -248,7 +207,7 @@ const RoomChatPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100%-60px)]">
           {/* Main Chat */}
           <div className="lg:col-span-3">
@@ -259,7 +218,7 @@ const RoomChatPage: React.FC = () => {
               onlineMembers={Math.floor(room.members.length * 0.6)}
             />
           </div>
-          
+
           {/* Side Panel */}
           <div className="lg:col-span-1 space-y-4 overflow-y-auto">
             {/* Quick Timeline */}
