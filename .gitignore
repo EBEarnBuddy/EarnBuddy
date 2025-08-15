@@ -32,34 +32,34 @@ dist-ssr
 
 # Firebase service account key (sensitive information, inside backend/ folder)
 # Ensure this exact filename is correct
-backend/serviceAccountKey.json
+pythonBackend/serviceAccountKey.json
 
 # Python virtual environment
-backend/venv/
-backend/.venv/
-backend/env/
+pythonBackend/venv/
+pythonBackend/.venv/
+pythonBackend/env/
 
 # Compiled Python files
-backend/__pycache__/
-backend/*.pyc
+pythonBackend/__pycache__/
+pythonBackend/*.pyc
 
 # IDE and editor files
-backend/.vscode/
-backend/.idea/
-backend/*.sublime-project
-backend/*.sublime-workspace
+pythonBackend/.vscode/
+pythonBackend/.idea/
+pythonBackend/*.sublime-project
+pythonBackend/*.sublime-workspace
 
 # Logs
-backend/*.log
-backend/logs/
+pythonBackend/*.log
+pythonBackend/logs/
 
 # pytest cache
-backend/.pytest_cache/
-backend/.coverage
+pythonBackend/.pytest_cache/
+pythonBackend/.coverage
 
 # FastAPI/Uvicorn specific
-backend/.mypy_cache/
-backend/.ruff_cache/
+pythonBackend/.mypy_cache/
+pythonBackend/.ruff_cache/
 
 
 # --- Frontend Specific Ignores (common for React/Node.js) ---
