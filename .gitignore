@@ -1,86 +1,16 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
 # Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.env
-#--- Global Ignores (for the whole repo) ---
-
-# Environment variables (sensitive information, for MongoDB connection at root)
-.env
-
-# --- Backend Specific Ignores (inside the backend/ folder) ---
-
-# Firebase service account key (sensitive information, inside backend/ folder)
-# Ensure this exact filename is correct
-pythonBackend/serviceAccountKey.json
-
-# Python virtual environment
-pythonBackend/venv/
-pythonBackend/.venv/
-pythonBackend/env/
-
-# Compiled Python files
-pythonBackend/__pycache__/
-pythonBackend/*.pyc
-
-# IDE and editor files
-pythonBackend/.vscode/
-pythonBackend/.idea/
-pythonBackend/*.sublime-project
-pythonBackend/*.sublime-workspace
-
-# Logs
-pythonBackend/*.log
-pythonBackend/logs/
-
-# pytest cache
-pythonBackend/.pytest_cache/
-pythonBackend/.coverage
-
-# FastAPI/Uvicorn specific
-pythonBackend/.mypy_cache/
-pythonBackend/.ruff_cache/
-
-
-# --- Frontend Specific Ignores (common for React/Node.js) ---
-# Node modules
-frontend/node_modules/
-
-# Build artifacts
-frontend/build/
-frontend/dist/
-
-# Logs
-frontend/*.log
-frontend/logs/
-
-# VS Code settings
-frontend/.vscode/
-
-# .env files specific to frontend if you have them inside frontend/
-# frontend/.env
-
-# Python virtual environment (if at root of repo)
-venv/
-.venv/
-env/

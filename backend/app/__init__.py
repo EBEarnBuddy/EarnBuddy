@@ -1,0 +1,1 @@
+# EarnBuddy FastAPI Backend Application
