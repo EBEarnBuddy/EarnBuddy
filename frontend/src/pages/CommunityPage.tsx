@@ -42,6 +42,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import DashboardNavbar from '../components/DashboardNavbar';
 import CommunityPostModal from '../components/CommunityPostModal';
 import { FirestoreService } from '../lib/firestore';
+import { communityPostsAPI } from '../lib/axios';
 
 const CommunityPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -80,7 +81,7 @@ const CommunityPage: React.FC = () => {
         new Date(post.createdAt.toDate()).toLocaleDateString() :
         new Date(post.createdAt).toLocaleDateString()
       ) : 'Just now',
-    likes: post.likes?.length || 0,
+    likes: post.likes || [], // Keep as array for like functionality
     comments: post.comments?.length || 0,
     shares: 0,
     pod: post.podId === 'community' ? 'Community' : post.podId,
@@ -127,6 +128,7 @@ const CommunityPage: React.FC = () => {
   );
 
   const filteredPosts = formattedPosts.filter(post => {
+    console.log('🔍 Filtering post:', post);
     const matchesSearch = searchTerm === '' ||
       post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -135,6 +137,7 @@ const CommunityPage: React.FC = () => {
     const matchesCategory = selectedCategory === 'all' ||
       post.pod.toLowerCase().includes(selectedCategory.toLowerCase());
 
+    console.log('🔍 Post matches search:', matchesSearch, 'matches category:', matchesCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -183,7 +186,23 @@ const CommunityPage: React.FC = () => {
     try {
       setPostsLoading(true);
 
-      // Load posts from localStorage first (these are always available)
+      // Try to get posts from backend API first (this ensures all users see the same posts)
+      let apiPosts = [];
+      try {
+        const response = await communityPostsAPI.getPosts({ limit: 50 });
+        if (response.success && response.data.posts) {
+          apiPosts = response.data.posts.map((post: any) => ({
+            ...post,
+            id: post._id,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt)
+          }));
+        }
+      } catch (apiError) {
+        console.error('Error loading from backend API:', apiError);
+      }
+
+      // Load posts from localStorage as fallback (these are always available)
       const localPosts = JSON.parse(localStorage.getItem('localCommunityPosts') || '[]');
       const formattedLocalPosts = localPosts.map((post: any) => ({
         ...post,
@@ -199,8 +218,8 @@ const CommunityPage: React.FC = () => {
         console.error('Error loading from Firestore:', firestoreError);
       }
 
-      // Combine posts, prioritizing local posts (they're more recent)
-      const allPosts = [...formattedLocalPosts, ...firestorePosts];
+      // Combine posts, prioritizing API posts (they're from the backend database)
+      const allPosts = [...apiPosts, ...formattedLocalPosts, ...firestorePosts];
 
       // Remove duplicates based on ID
       const uniquePosts = allPosts.filter((post, index, self) =>
@@ -284,15 +303,27 @@ const CommunityPage: React.FC = () => {
             </motion.button>
           </div>
 
-          <div className="flex items-center gap-3">
-            {process.env.NODE_ENV === 'development' && (
-              <button
-                onClick={addTestPost}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
-              >
-                Add Test Post
-              </button>
-            )}
+                      <div className="flex items-center gap-3">
+              {process.env.NODE_ENV === 'development' && (
+                <>
+                  <button
+                    onClick={addTestPost}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm"
+                  >
+                    Add Test Post
+                  </button>
+                  <button
+                    onClick={() => {
+                      const posts = JSON.parse(localStorage.getItem('localCommunityPosts') || '[]');
+                      console.log('Posts in localStorage:', posts);
+                      alert(`Found ${posts.length} posts in localStorage`);
+                    }}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm"
+                  >
+                    Check Local Storage
+                  </button>
+                </>
+              )}
             <motion.button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2"
@@ -543,12 +574,27 @@ const CommunityPage: React.FC = () => {
                             <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                               <div className="flex items-center gap-6">
                                 <motion.button
-                                  className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors"
+                                  onClick={async () => {
+                                    try {
+                                      await communityPostsAPI.likePost(post.id);
+                                      // Refresh posts to show updated like count
+                                      await loadCommunityPosts();
+                                    } catch (error) {
+                                      console.error('Error liking post:', error);
+                                    }
+                                  }}
+                                  className={`flex items-center gap-2 transition-colors ${
+                                    post.likes?.includes(currentUser?.uid || '')
+                                      ? 'text-red-500'
+                                      : 'text-gray-500 hover:text-red-500'
+                                  }`}
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                 >
-                                  <Heart className="w-5 h-5" />
-                                  <span>{post.likes}</span>
+                                  <Heart className={`w-5 h-5 ${
+                                    post.likes?.includes(currentUser?.uid || '') ? 'fill-current' : ''
+                                  }`} />
+                                  <span>{post.likes?.length || 0}</span>
                                 </motion.button>
 
                                 <motion.button

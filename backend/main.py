@@ -37,6 +37,8 @@ async def lifespan(app: FastAPI):
         await db.rooms.create_index([("members", 1)])
         await db.messages.create_index([("roomId", 1), ("createdAt", 1)])
         await db.projects.create_index([("authorId", 1), ("createdAt", -1)])
+        await db.communityPosts.create_index([("createdAt", -1)])
+        await db.communityPosts.create_index([("podId", 1), ("createdAt", -1)])
         print("INFO: MongoDB indexes created successfully.")
     except Exception as e:
         print(f"ERROR: Failed to create MongoDB indexes: {e}")

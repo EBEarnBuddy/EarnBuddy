@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useRooms, useRoomMessages } from '../hooks/useFirestore';
+import { useRooms } from '../hooks/useFirestore';
 import { ChatInterface } from '../components/ui/chat-interface';
 import { Whiteboard } from '../components/ui/whiteboard';
 import { TimelineTracker } from '../components/ui/timeline-tracker';
@@ -14,7 +14,6 @@ const RoomChatPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const { currentUser, userProfile, logout } = useAuth();
   const { rooms, loading: roomsLoading } = useRooms();
-  const { messages, loading: messagesLoading, sendMessage } = useRoomMessages(roomId || '');
   const navigate = useNavigate();
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -79,15 +78,7 @@ const RoomChatPage: React.FC = () => {
     }
   ];
 
-  const handleSendMessage = async (content: string, type?: 'text' | 'image' | 'video' | 'file', attachment?: any) => {
-    if (!currentUser) return;
 
-    try {
-      await sendMessage(content, currentUser.uid, type, attachment);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
 
   const handleLogout = async () => {
     try {

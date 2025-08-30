@@ -53,5 +53,9 @@ class Database:
     def activities(self):
         return self.db.activities
 
+    @property
+    def communityPosts(self):
+        return self.db.communityPosts
+
 # Create database instance
 db = Database()

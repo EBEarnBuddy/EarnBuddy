@@ -28,6 +28,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { usePods } from '../hooks/useFirestore';
 import { FirestoreService } from '../lib/firestore';
+import { communityPostsAPI } from '../lib/axios';
 
 interface CommunityPostModalProps {
   isOpen: boolean;
@@ -186,7 +187,7 @@ const CommunityPostModal: React.FC<CommunityPostModalProps> = ({
         });
       }
 
-      // Create the post - use localStorage for now to ensure it works
+      // Create the post - use localStorage directly for now to ensure it works
       const localPost = {
         id: `local_${Date.now()}`,
         userId: currentUser.uid,
@@ -208,27 +209,30 @@ const CommunityPostModal: React.FC<CommunityPostModalProps> = ({
         updatedAt: new Date()
       };
 
-      // Store in localStorage
+      // Save to localStorage
       const existingPosts = JSON.parse(localStorage.getItem('localCommunityPosts') || '[]');
       existingPosts.unshift(localPost);
       localStorage.setItem('localCommunityPosts', JSON.stringify(existingPosts));
 
-      // Try Firestore as well (but don't fail if it doesn't work)
+      console.log('Post saved to localStorage successfully');
+
+      // Try backend API as well (but don't fail if it doesn't work)
       try {
-        await FirestoreService.createCommunityPost({
-          userId: currentUser.uid,
-          userName: currentUser.displayName || 'Anonymous User',
-          userAvatar: currentUser.photoURL || undefined,
+        await communityPostsAPI.createPost({
           content: postData.content,
           selectedPod: postData.selectedPod,
           images: imageUrls,
           documents: documents,
           emoji: postData.emoji,
-          tags: postData.tags
+          tags: postData.tags,
+          // Send user info from frontend
+          userName: currentUser?.displayName || 'Anonymous User',
+          userAvatar: currentUser?.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          userId: currentUser?.uid || 'anonymous'
         });
-        console.log('Post also saved to Firestore');
-      } catch (firestoreError) {
-        console.error('Firestore error (non-critical):', firestoreError);
+        console.log('Post also saved to backend API');
+      } catch (apiError) {
+        console.log('Backend API not available, but post was saved to localStorage');
       }
 
       onSuccess();

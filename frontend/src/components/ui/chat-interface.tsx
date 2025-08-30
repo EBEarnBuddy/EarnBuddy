@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Paperclip, MoreVertical, Users, Hash, AtSign, Pin, Settings, Image, Video, Mic, File, X, Monitor, Edit3 } from 'lucide-react';
+import { Send, Paperclip, Smile, Video, Monitor, X, Mic, File } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useRoomChatMessages } from '../../hooks/useFirestore';
+import { roomMessagesAPI } from '../../lib/axios';
 
 interface ChatInterfaceProps {
   roomName: string;
@@ -18,6 +18,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onlineMembers
 }) => {
   const [newMessage, setNewMessage] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -25,8 +27,76 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadingRef = useRef(false);
   const { currentUser, userProfile } = useAuth();
-  const { messages, loading, sendMessage, addReaction } = useRoomChatMessages(roomId);
+
+  // Load messages function with proper state management
+  const loadMessages = useCallback(async (isInitialLoad = false) => {
+    if (!roomId || isLoadingRef.current) {
+      return;
+    }
+
+    try {
+      isLoadingRef.current = true;
+
+      if (isInitialLoad) {
+        console.log('Initial loading messages for room:', roomId);
+        setLoading(true);
+      } else {
+        console.log('Polling messages for room:', roomId);
+      }
+
+      const response = await roomMessagesAPI.getMessages(roomId, { limit: 100 });
+      if (response.success) {
+        setMessages(response.data.messages || []);
+        console.log('Loaded messages:', response.data.messages?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, [roomId]);
+
+  // Load messages on component mount and when roomId changes
+  useEffect(() => {
+    console.log('RoomId changed to:', roomId);
+    if (roomId) {
+      loadMessages(true); // Initial load
+    }
+  }, [roomId, loadMessages]);
+
+  // Set up polling - only start once when roomId is set
+  useEffect(() => {
+    if (!roomId) return;
+
+    console.log('Starting message polling for room:', roomId);
+
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Start new interval after a delay to avoid immediate polling
+    const timeoutId = setTimeout(() => {
+      intervalRef.current = setInterval(() => {
+        loadMessages(false); // Polling load
+      }, 5000); // Poll every 5 seconds
+    }, 5000); // Wait 5 seconds before starting to poll
+
+    // Cleanup function
+    return () => {
+      console.log('Stopping message polling');
+      clearTimeout(timeoutId);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [roomId, loadMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,8 +106,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!currentUser || !newMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() && !selectedFile) return;
 
     try {
       if (selectedFile) {
@@ -45,23 +115,39 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const fileType = selectedFile.type.startsWith('image/') ? 'image' :
                         selectedFile.type.startsWith('video/') ? 'video' : 'file';
 
-        sendMessage(newMessage || `Shared a ${fileType}`, currentUser.uid,
-          userProfile?.displayName || currentUser.displayName || 'Anonymous',
-          userProfile?.photoURL || currentUser.photoURL || '', fileType, {
-          file: selectedFile,
-          url: previewUrl,
-          name: selectedFile.name,
-          type: selectedFile.type,
-          size: formatFileSize(selectedFile.size)
+        await roomMessagesAPI.sendMessage({
+          roomId,
+          content: newMessage || `Shared a ${fileType}`,
+          senderId: currentUser.uid,
+          senderName: userProfile?.displayName || currentUser.displayName || 'Anonymous',
+          senderAvatar: userProfile?.photoURL || currentUser.photoURL || '',
+          type: fileType,
+          attachment: {
+            file: selectedFile,
+            url: previewUrl,
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: formatFileSize(selectedFile.size)
+          }
         });
         setSelectedFile(null);
         setPreviewUrl(null);
       } else {
-        sendMessage(newMessage, currentUser.uid,
-          userProfile?.displayName || currentUser.displayName || 'Anonymous',
-          userProfile?.photoURL || currentUser.photoURL || '');
+        await roomMessagesAPI.sendMessage({
+          roomId,
+          content: newMessage,
+          senderId: currentUser.uid,
+          senderName: userProfile?.displayName || currentUser.displayName || 'Anonymous',
+          senderAvatar: userProfile?.photoURL || currentUser.photoURL || '',
+          type: 'text'
+        });
       }
       setNewMessage('');
+
+      // Reload messages to show the new message after a short delay
+      setTimeout(() => {
+        loadMessages(false);
+      }, 1000);
     } catch (error) {
       console.error('Error sending message:', error);
     }
@@ -78,23 +164,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const input = document.createElement('input');
     input.type = 'file';
 
-    switch (type) {
-      case 'image':
-        input.accept = 'image/*';
-        break;
-      case 'video':
-        input.accept = 'video/*';
-        break;
-      case 'file':
-        input.accept = '*/*';
-        break;
+    if (type === 'image') {
+      input.accept = 'image/*';
+    } else if (type === 'video') {
+      input.accept = 'video/*';
+    } else {
+      input.accept = '*/*';
     }
 
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         setSelectedFile(file);
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        if (type === 'image' || type === 'video') {
           const url = URL.createObjectURL(file);
           setPreviewUrl(url);
         }
@@ -121,15 +203,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const getRoleColor = (role?: string) => {
-    switch (role) {
-      case 'Admin': return 'text-red-500';
-      case 'Developer': return 'text-blue-500';
-      case 'Product Manager': return 'text-purple-500';
-      default: return 'text-gray-500';
-    }
-  };
-
   const formatTimestamp = (timestamp: any) => {
     if (!timestamp) return 'Just now';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -137,157 +210,147 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleReaction = async (messageId: string, emoji: string) => {
-    if (!currentUser) return;
-    try {
-      await addReaction(messageId, emoji, currentUser.uid);
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-    }
+    // TODO: Implement reactions
+    console.log('Reaction:', emoji, 'for message:', messageId);
   };
 
-  const renderMessage = (message: any, index: number) => (
-    <motion.div
-      key={message.id}
-      className="group"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.1 }}
-    >
-      <div className="flex items-start gap-3 hover:bg-white/50 dark:hover:bg-gray-700/50 p-2 rounded-lg transition-colors">
-        <div className="relative">
-          <img
-            src={message.senderAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
-            alt={message.senderName || "User"}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-        </div>
+  const renderMessage = (message: any, index: number) => {
+    const isOwnMessage = currentUser && message.senderId === currentUser.uid;
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-              {message.senderName || "User"}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatTimestamp(message.timestamp)}
-            </span>
-          </div>
-
-          <div className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-2">
-            {message.content}
-          </div>
-
-          {/* Reactions */}
-          {message.reactions && Object.keys(message.reactions).length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {Object.entries(message.reactions).map(([emoji, userIds]) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleReaction(message.id, emoji)}
-                  className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
-                    currentUser && userIds.includes(currentUser.uid)
-                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <span>{emoji}</span>
-                  <span>{userIds.length}</span>
-                </button>
-              ))}
+    return (
+      <motion.div
+        key={message._id || message.id}
+        className={`group flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.1 }}
+      >
+        <div className={`flex items-start gap-3 max-w-xs lg:max-w-md ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+          {/* Avatar - only show for other users' messages */}
+          {!isOwnMessage && (
+            <div className="relative flex-shrink-0">
+              <img
+                src={message.senderAvatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"}
+                alt={message.senderName || "User"}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+              <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
             </div>
           )}
 
-          {/* Render attachment if present */}
-          {message.attachment && (
-            <div className="mt-2">
-              {message.type === 'image' && (
-                <img
-                  src={message.attachment.url}
-                  alt={message.attachment.name}
-                  className="max-w-xs rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => window.open(message.attachment!.url, '_blank')}
-                />
-              )}
-              {message.type === 'video' && (
-                <video
-                  src={message.attachment.url}
-                  controls
-                  className="max-w-xs rounded-lg shadow-md"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              )}
-              {message.type === 'file' && (
-                <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg max-w-xs">
-                  <File className="w-8 h-8 text-gray-500" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {message.attachment.name}
-                    </p>
-                    {message.attachment.size && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {message.attachment.size}
-                      </p>
-                    )}
-                  </div>
+          {/* Message Content */}
+          <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+            {/* Sender Name - only show for other users' messages */}
+            {!isOwnMessage && (
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-gray-900 dark:text-gray-100 text-xs">
+                  {message.senderName || "User"}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatTimestamp(message.timestamp)}
+                </span>
+              </div>
+            )}
+
+            {/* Message Bubble */}
+            <div className={`rounded-2xl px-4 py-2 max-w-full ${
+              isOwnMessage
+                ? 'bg-emerald-600 text-white rounded-br-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md'
+            }`}>
+              <div className="text-sm leading-relaxed">
+                {message.content}
+              </div>
+
+              {/* Render attachment if present */}
+              {message.attachment && (
+                <div className="mt-2">
+                  {message.type === 'image' && (
+                    <img
+                      src={message.attachment.url}
+                      alt={message.attachment.name}
+                      className="max-w-xs rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => window.open(message.attachment!.url, '_blank')}
+                    />
+                  )}
+                  {message.type === 'video' && (
+                    <video
+                      src={message.attachment.url}
+                      controls
+                      className="max-w-xs rounded-lg shadow-md"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
+                  {message.type === 'file' && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg max-w-xs">
+                      <File className="w-8 h-8 text-gray-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {message.attachment.name}
+                        </p>
+                        {message.attachment.size && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {message.attachment.size}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
 
-          {/* Quick Reactions */}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2">
-            <div className="flex gap-1">
-              {['👍', '❤️', '😄', '🎉', '🚀'].map(emoji => (
-                <button
-                  key={emoji}
-                  onClick={() => handleReaction(message.id, emoji)}
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
+            {/* Timestamp for own messages */}
+            {isOwnMessage && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {formatTimestamp(message.timestamp)}
+              </span>
+            )}
+
+            {/* Quick Reactions - only show on hover */}
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+              <div className="flex gap-1">
+                {['👍', '❤️', '😂', '😮', '😢', '😡'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(message._id || message.id, emoji)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-sm"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Hash className="w-6 h-6 text-emerald-600" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-          </div>
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white">{roomName}</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {members} members • {onlineMembers} online
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{onlineMembers} online • {members} members</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowVideoCall(true)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
-            title="Start Video Call"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <Video className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-emerald-600" />
+            <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <button
             onClick={() => setShowWhiteboard(true)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors group"
-            title="Open Whiteboard"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <Edit3 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-emerald-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-            <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <Monitor className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
       </div>
@@ -295,109 +358,99 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-gray-500 dark:text-gray-400">Loading messages...</div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-gray-400">
-            <Hash className="w-12 h-12 mb-2 opacity-50" />
-            <p>No messages yet. Start the conversation!</p>
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="text-6xl text-gray-300 dark:text-gray-600 mb-4">#</div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No messages yet</h3>
+            <p className="text-gray-500 dark:text-gray-400">Start the conversation!</p>
           </div>
         ) : (
-          messages.map(renderMessage)
+          messages.map((message, index) => renderMessage(message, index))
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Typing Indicators */}
-      {typingUsers.length > 0 && (
-        <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-          {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-        </div>
-      )}
-
-      {/* File Preview */}
-      {selectedFile && (
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            {previewUrl ? (
-              <img src={previewUrl} alt="Preview" className="w-12 h-12 rounded object-cover" />
-            ) : (
-              <File className="w-12 h-12 text-gray-500" />
-            )}
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(selectedFile.size)}</p>
-            </div>
-            <button
-              onClick={removeSelectedFile}
-              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Message Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        {/* Selected File Preview */}
+        {selectedFile && (
+          <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <File className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{selectedFile.name}</span>
+              </div>
+              <button
+                onClick={removeSelectedFile}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end gap-3">
-          <div className="relative">
-            <button
-              onClick={() => setShowMediaOptions(!showMediaOptions)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
+          <div className="flex-1">
+            <div className="relative">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type a message..."
+                className="w-full p-3 pr-12 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                rows={1}
+                style={{ minHeight: '44px', maxHeight: '120px' }}
+              />
+
+              <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                <button
+                  onClick={() => setShowMediaOptions(!showMediaOptions)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                >
+                  <Paperclip className="w-4 h-4 text-gray-500" />
+                </button>
+                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
+                  <Smile className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </div>
 
             {/* Media Options */}
             <AnimatePresence>
               {showMediaOptions && (
                 <motion.div
-                  className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
+                  className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2"
                 >
-                  <button
-                    onClick={() => handleFileSelect('image')}
-                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm"
-                  >
-                    <Image className="w-4 h-4" />
-                    Image
-                  </button>
-                  <button
-                    onClick={() => handleFileSelect('video')}
-                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm"
-                  >
-                    <Video className="w-4 h-4" />
-                    Video
-                  </button>
-                  <button
-                    onClick={() => handleFileSelect('file')}
-                    className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-sm"
-                  >
-                    <File className="w-4 h-4" />
-                    File
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleFileSelect('image')}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      📷 Image
+                    </button>
+                    <button
+                      onClick={() => handleFileSelect('video')}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      🎥 Video
+                    </button>
+                    <button
+                      onClick={() => handleFileSelect('file')}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      📎 File
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          <div className="flex-1 relative">
-            <textarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              rows={1}
-              style={{ minHeight: '44px', maxHeight: '120px' }}
-            />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded">
-              <Smile className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
           </div>
 
           <button
@@ -498,74 +551,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               >
                 <X className="w-6 h-6" />
               </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Whiteboard Modal */}
-      <AnimatePresence>
-        {showWhiteboard && (
-          <motion.div
-            className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {/* Whiteboard Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3">
-                <Edit3 className="w-6 h-6 text-emerald-600" />
-                <div>
-                  <h2 className="font-semibold text-gray-900 dark:text-white">{roomName} - Collaborative Whiteboard</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Draw, brainstorm, and collaborate in real-time</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
-                  Save Board
-                </button>
-                <button
-                  onClick={() => setShowWhiteboard(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Whiteboard Canvas */}
-            <div className="flex-1 relative bg-white dark:bg-gray-800">
-              <div className="absolute inset-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Edit3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">Collaborative Whiteboard</h3>
-                  <p className="text-gray-500 dark:text-gray-500">Start drawing, adding notes, or brainstorming ideas</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-600 mt-2">Real-time collaboration coming soon!</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Whiteboard Tools */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <div className="flex items-center justify-center gap-4">
-                <button className="p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  ✏️ Pen
-                </button>
-                <button className="p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  🖍️ Marker
-                </button>
-                <button className="p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  🧽 Eraser
-                </button>
-                <button className="p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  📝 Text
-                </button>
-                <button className="p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                  🔲 Shapes
-                </button>
-              </div>
             </div>
           </motion.div>
         )}
