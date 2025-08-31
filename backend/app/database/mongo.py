@@ -10,7 +10,7 @@ class Database:
 
     async def connect(self):
         """Create database connection."""
-        mongo_uri = os.getenv("MONGO_URI", mongodb+srv://EBEarnBuddy:EBearnbuddy069@cluster0.4stypv0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0)
+        mongo_uri = os.getenv("MONGO_URI", "mongodb+srv://EBEarnBuddy:EBearnbuddy069@cluster0.4stypv0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
         self.client = motor.motor_asyncio.AsyncIOMotorClient(mongo_uri)
         self.db = self.client.earnbuddy
         print("✅ Connected to MongoDB.")
