@@ -329,9 +329,17 @@ export const useStartups = () => {
     }
   };
 
-  const applyToStartup = async (startupId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }) => {
+  const applyToStartup = async (startupId: string, roleId: string, userId: string, applicationData: {
+    coverLetter: string;
+    portfolio?: string;
+    linkedin?: string;
+    github?: string;
+    experience?: string;
+    whyInterested?: string;
+    availability: string;
+  }) => {
     try {
-      await FirestoreService.applyToStartup(startupId, userId, applicationData);
+      await FirestoreService.applyToStartup(startupId, roleId, userId, applicationData);
       // Refresh startups
       const updatedStartups = await FirestoreService.getStartups();
       setStartups(updatedStartups);

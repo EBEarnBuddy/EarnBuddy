@@ -166,7 +166,8 @@ export interface Startup {
   founderName: string;
   founderAvatar?: string;
   status: 'active' | 'paused' | 'closed';
-  applicants: StartupApplication[];
+  roles: StartupRole[]; // Changed from applicants to roles
+  totalApplicants?: number; // Total across all roles
   createdAt: Timestamp;
   updatedAt: Timestamp;
   website?: string;
@@ -174,14 +175,32 @@ export interface Startup {
   teamSize?: number;
 }
 
+export interface StartupRole {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  salary?: string;
+  equity?: string;
+  type: 'full-time' | 'part-time' | 'contract' | 'internship';
+  location: 'remote' | 'hybrid' | 'onsite';
+  applicants: StartupApplication[];
+}
+
 export interface StartupApplication {
   userId: string;
   userName: string;
   userAvatar?: string;
+  roleId: string; // Added to track which role was applied for
   coverLetter: string;
   portfolio?: string;
+  linkedin?: string;
+  github?: string;
+  experience?: string;
+  whyInterested?: string;
+  availability: string;
   appliedAt: Timestamp;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'interviewing';
 }
 
 export interface ChatRoom {
@@ -1071,22 +1090,54 @@ export class FirestoreService {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Startup));
   }
 
-  static async applyToStartup(startupId: string, userId: string, applicationData?: { coverLetter?: string; portfolio?: string }): Promise<void> {
+  static async applyToStartup(startupId: string, roleId: string, userId: string, applicationData: {
+    coverLetter: string;
+    portfolio?: string;
+    linkedin?: string;
+    github?: string;
+    experience?: string;
+    whyInterested?: string;
+    availability: string;
+  }): Promise<void> {
     const startupRef = doc(db, 'startups', startupId);
     const userProfile = await this.getUserProfile(userId);
 
-    await updateDoc(startupRef, {
-      applicants: arrayUnion({
-        userId,
-        userName: userProfile?.displayName || 'Anonymous User',
-        userAvatar: userProfile?.photoURL || '',
-        coverLetter: applicationData?.coverLetter || '',
-        portfolio: applicationData?.portfolio || '',
-        appliedAt: serverTimestamp(),
-        status: 'pending'
-      }),
-      updatedAt: serverTimestamp()
-    });
+    const application: StartupApplication = {
+      userId,
+      userName: userProfile?.displayName || 'Anonymous User',
+      userAvatar: userProfile?.photoURL || '',
+      roleId,
+      coverLetter: applicationData.coverLetter,
+      portfolio: applicationData.portfolio || '',
+      linkedin: applicationData.linkedin || '',
+      github: applicationData.github || '',
+      experience: applicationData.experience || '',
+      whyInterested: applicationData.whyInterested || '',
+      availability: applicationData.availability,
+      appliedAt: serverTimestamp() as any,
+      status: 'pending'
+    };
+
+    // Get current startup data
+    const startupDoc = await getDoc(startupRef);
+    if (startupDoc.exists()) {
+      const startupData = startupDoc.data() as Startup;
+      const updatedRoles = startupData.roles.map(role => {
+        if (role.id === roleId) {
+          return {
+            ...role,
+            applicants: [...role.applicants, application]
+          };
+        }
+        return role;
+      });
+
+      await updateDoc(startupRef, {
+        roles: updatedRoles,
+        totalApplicants: increment(1),
+        updatedAt: serverTimestamp()
+      });
+    }
   }
 
   static async bookmarkStartup(startupId: string, userId: string): Promise<void> {
@@ -1103,6 +1154,32 @@ export class FirestoreService {
       bookmarkedStartups: arrayRemove(startupId),
       updatedAt: serverTimestamp()
     });
+  }
+
+  static async updateStartupRoleApplicationStatus(startupId: string, roleId: string, applicationUserId: string, status: 'accepted' | 'rejected' | 'interviewing'): Promise<void> {
+    const startupRef = doc(db, 'startups', startupId);
+    const startupDoc = await getDoc(startupRef);
+
+    if (startupDoc.exists()) {
+      const startupData = startupDoc.data() as Startup;
+      const updatedRoles = startupData.roles.map(role => {
+        if (role.id === roleId) {
+          const updatedApplicants = role.applicants.map(app => {
+            if (app.userId === applicationUserId) {
+              return { ...app, status };
+            }
+            return app;
+          });
+          return { ...role, applicants: updatedApplicants };
+        }
+        return role;
+      });
+
+      await updateDoc(startupRef, {
+        roles: updatedRoles,
+        updatedAt: serverTimestamp()
+      });
+    }
   }
 
   // Onboarding

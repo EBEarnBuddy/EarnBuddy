@@ -22,10 +22,10 @@ async def get_users(
         if skills:
             skill_list = [s.strip() for s in skills.split(",")]
             filter_query["skills"] = {"$in": skill_list}
-            
+
         cursor = db.users.find(filter_query).skip(skip).limit(limit).sort("createdAt", -1)
         users = await cursor.to_list(length=limit)
-        
+
         # Return only public profile data
         public_users = []
         for user in users:
@@ -44,9 +44,9 @@ async def get_users(
                 "joinDate": user.get("joinDate")
             }
             public_users.append(public_user)
-        
+
         total = await db.users.count_documents(filter_query)
-        
+
         return {
             "success": True,
             "data": {
@@ -71,14 +71,14 @@ async def get_user(user_id: str):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user ID"
             )
-            
+
         user = await db.users.find_one({"_id": ObjectId(user_id)})
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-            
+
         # Return only public profile data
         public_profile = {
             "id": str(user["_id"]),
@@ -94,7 +94,7 @@ async def get_user(user_id: str):
             "completedProjects": user.get("completedProjects", 0),
             "joinDate": user.get("joinDate")
         }
-        
+
         return {
             "success": True,
             "data": {"user": public_profile}

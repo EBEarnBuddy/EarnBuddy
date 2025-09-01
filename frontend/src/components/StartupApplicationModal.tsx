@@ -4,6 +4,17 @@ import { X, Send, FileText, Globe, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useStartups } from '../hooks/useFirestore';
 
+interface StartupRole {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  salary?: string;
+  equity?: string;
+  type: 'full-time' | 'part-time' | 'contract' | 'internship';
+  location: 'remote' | 'hybrid' | 'onsite';
+}
+
 interface Startup {
   id: string;
   name: string;
@@ -14,12 +25,14 @@ interface Startup {
   funding: string;
   equity: string;
   requirements: string[];
+  roles: StartupRole[];
 }
 
 interface StartupApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   startup: Startup | null;
+  selectedRole?: StartupRole | null;
   onSuccess: () => void;
 }
 
@@ -27,11 +40,13 @@ const StartupApplicationModal: React.FC<StartupApplicationModalProps> = ({
   isOpen,
   onClose,
   startup,
+  selectedRole,
   onSuccess
 }) => {
   const { currentUser } = useAuth();
   const { applyToStartup } = useStartups();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRoleId, setSelectedRoleId] = useState(selectedRole?.id || '');
   const [formData, setFormData] = useState({
     coverLetter: '',
     portfolio: '',
@@ -50,12 +65,12 @@ const StartupApplicationModal: React.FC<StartupApplicationModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!currentUser || !startup) return;
+    if (!currentUser || !startup || !selectedRoleId) return;
 
     try {
       setIsSubmitting(true);
 
-      await applyToStartup(startup.id, currentUser.uid, {
+      await applyToStartup(startup.id, selectedRoleId, currentUser.uid, {
         coverLetter: formData.coverLetter,
         portfolio: formData.portfolio,
         linkedin: formData.linkedin,
@@ -78,6 +93,7 @@ const StartupApplicationModal: React.FC<StartupApplicationModalProps> = ({
         whyInterested: '',
         availability: 'full-time'
       });
+      setSelectedRoleId('');
     } catch (error) {
       console.error('Error applying to startup:', error);
     } finally {
@@ -134,6 +150,71 @@ const StartupApplicationModal: React.FC<StartupApplicationModalProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Role Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Role *
+              </label>
+              <select
+                value={selectedRoleId}
+                onChange={(e) => setSelectedRoleId(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
+              >
+                <option value="">Choose a role...</option>
+                {startup.roles?.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.title} - {role.type} ({role.location})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Selected Role Details */}
+            {selectedRoleId && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
+                {(() => {
+                  const role = startup.roles?.find(r => r.id === selectedRoleId);
+                  if (!role) return null;
+
+                  return (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">{role.title}</h4>
+                      <p className="text-gray-600 dark:text-gray-400 mb-3">{role.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                          {role.type}
+                        </span>
+                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs">
+                          {role.location}
+                        </span>
+                        {role.salary && (
+                          <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-full text-xs">
+                            {role.salary}
+                          </span>
+                        )}
+                        {role.equity && (
+                          <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs">
+                            {role.equity} equity
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requirements:</h5>
+                        <ul className="text-sm text-gray-600 dark:text-gray-400">
+                          {role.requirements?.map((req, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-emerald-500 mt-1">•</span>
+                              {req}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Application Form */}
             <div className="space-y-6">
@@ -255,14 +336,14 @@ const StartupApplicationModal: React.FC<StartupApplicationModalProps> = ({
               </motion.button>
               <motion.button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !formData.coverLetter || !formData.experience || !formData.whyInterested}
+                disabled={isSubmitting || !selectedRoleId || !formData.coverLetter || !formData.experience || !formData.whyInterested}
                 className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  isSubmitting || !formData.coverLetter || !formData.experience || !formData.whyInterested
+                  isSubmitting || !selectedRoleId || !formData.coverLetter || !formData.experience || !formData.whyInterested
                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-lg'
                 }`}
-                whileHover={{ scale: isSubmitting || !formData.coverLetter || !formData.experience || !formData.whyInterested ? 1 : 1.02 }}
-                whileTap={{ scale: isSubmitting || !formData.coverLetter || !formData.experience || !formData.whyInterested ? 1 : 0.98 }}
+                whileHover={{ scale: isSubmitting || !selectedRoleId || !formData.coverLetter || !formData.experience || !formData.whyInterested ? 1 : 1.02 }}
+                whileTap={{ scale: isSubmitting || !selectedRoleId || !formData.coverLetter || !formData.experience || !formData.whyInterested ? 1 : 0.98 }}
               >
                 {isSubmitting ? (
                   <>
