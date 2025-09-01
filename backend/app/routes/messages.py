@@ -219,15 +219,14 @@ async def get_room_messages(
     room_id: str,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    response: Response
+    response: Response  # <-- No default value, no comma missing
 ):
-    await add_cors_headers(response)  # ✅ Add headers
+    await add_cors_headers(response)
     try:
         global room_messages
         messages = room_messages.get(room_id, [])
         total = len(messages)
         paginated_messages = messages[skip:skip + limit]
-
         return {
             "success": True,
             "data": {
