@@ -13,6 +13,9 @@ from app.routes import auth, projects, profile, upload, pods, posts, reply, room
 from app.database.mongo import db
 from app.core.firebase import initialize_firebase
 
+# Import custom CORS middleware
+from app.middleware.cors import CustomCORSMiddleware
+
 load_dotenv()
 
 @asynccontextmanager
@@ -62,7 +65,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - More explicit configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -75,9 +78,14 @@ app.add_middleware(
         os.getenv("FRONTEND_URL", "")   # Allow custom frontend URL from env
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,  # Cache preflight for 24 hours
 )
+
+# Add custom CORS middleware as a backup
+app.add_middleware(CustomCORSMiddleware)
 
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -90,6 +98,17 @@ async def health_check():
         "message": "EarnBuddy API is running",
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# CORS test endpoint
+@app.options("/api/cors-test")
+async def cors_test_options():
+    """Test CORS preflight request."""
+    return {"message": "CORS preflight successful"}
+
+@app.get("/api/cors-test")
+async def cors_test():
+    """Test CORS GET request."""
+    return {"message": "CORS GET request successful"}
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])

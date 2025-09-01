@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Response
 from app.database.mongo import db
 from app.models.message import MessageModel, MessageCreate, MessageUpdate
 from app.middleware.auth import get_current_user
@@ -151,10 +151,25 @@ async def get_messages(
         )
 
 # Room messaging endpoints (no authentication required)
+
+@router.options("/room")
+async def create_room_message_options(response: Response):
+    """Handle CORS preflight for POST /room"""
+    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Max-Age"] = "86400"
+    return {"message": "OK"}
+
 @router.post("/room")
 async def create_room_message(
-    message_data: RoomMessageCreate
+    message_data: RoomMessageCreate,
+    response: Response
 ):
+    # Add CORS headers
+    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
     """Create a new room message."""
     try:
         # Create room message document
@@ -189,12 +204,26 @@ async def create_room_message(
             detail=f"Failed to send room message: {str(e)}"
         )
 
+@router.options("/room/{room_id}")
+async def get_room_messages_options(room_id: str, response: Response):
+    """Handle CORS preflight for GET /room/{room_id}"""
+    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Max-Age"] = "86400"
+    return {"message": "OK"}
+
 @router.get("/room/{room_id}")
 async def get_room_messages(
     room_id: str,
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100)
+    limit: int = Query(50, ge=1, le=100),
+    response: Response
 ):
+    # Add CORS headers
+    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
     """Get messages for a specific room."""
     try:
         # Get messages from in-memory storage
