@@ -11,12 +11,10 @@ from pydantic import BaseModel
 
 # CORS dependency
 async def add_cors_headers(response: Response):
-    """Add CORS headers to response"""
     response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+    response.headers["Access-Control-Max-Age"] = "86400"
 
 router = APIRouter()
 
@@ -173,10 +171,10 @@ async def create_room_message_options(response: Response):
 @router.post("/room")
 async def create_room_message(
     message_data: RoomMessageCreate,
-    response: Response = Depends(add_cors_headers)
+    response: Response
 ):
+    await add_cors_headers(response)  # ✅ Add headers
     try:
-        # Create room message document
         message_doc = {
             "_id": str(ObjectId()),
             "roomId": message_data.roomId,
@@ -189,7 +187,6 @@ async def create_room_message(
             "timestamp": datetime.utcnow().isoformat()
         }
 
-        # Add to in-memory storage
         global room_messages
         if message_data.roomId not in room_messages:
             room_messages[message_data.roomId] = []
@@ -222,15 +219,12 @@ async def get_room_messages(
     room_id: str,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    response: Response = Depends(add_cors_headers)
+    response: Response
 ):
+    await add_cors_headers(response)  # ✅ Add headers
     try:
-        # Get messages from in-memory storage
         global room_messages
-
         messages = room_messages.get(room_id, [])
-
-        # Apply pagination
         total = len(messages)
         paginated_messages = messages[skip:skip + limit]
 
