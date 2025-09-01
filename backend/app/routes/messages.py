@@ -9,6 +9,15 @@ import json
 import os
 from pydantic import BaseModel
 
+# CORS dependency
+async def add_cors_headers(response: Response):
+    """Add CORS headers to response"""
+    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
+
 router = APIRouter()
 
 # Simple file-based storage for room messages
@@ -164,13 +173,8 @@ async def create_room_message_options(response: Response):
 @router.post("/room")
 async def create_room_message(
     message_data: RoomMessageCreate,
-    response: Response
+    response: Response = Depends(add_cors_headers)
 ):
-    # Add CORS headers
-    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
-    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    """Create a new room message."""
     try:
         # Create room message document
         message_doc = {
@@ -218,13 +222,8 @@ async def get_room_messages(
     room_id: str,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    response: Response
+    response: Response = Depends(add_cors_headers)
 ):
-    # Add CORS headers
-    response.headers["Access-Control-Allow-Origin"] = "https://beta.earnbuddy.tech"
-    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    """Get messages for a specific room."""
     try:
         # Get messages from in-memory storage
         global room_messages
