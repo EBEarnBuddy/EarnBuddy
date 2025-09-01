@@ -70,7 +70,9 @@ app.add_middleware(
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
-        os.getenv("FRONTEND_URL", "http://beta.earnbuddy.tech")
+        "https://beta.earnbuddy.tech",  # Explicitly allow beta domain
+        "https://earnbuddy.tech",       # Allow main domain too
+        os.getenv("FRONTEND_URL", "")   # Allow custom frontend URL from env
     ],
     allow_credentials=True,
     allow_methods=["*"],
