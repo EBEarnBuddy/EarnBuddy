@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FirestoreService, Pod, PodPost, Room, Message, Startup, FreelanceGig, Notification, ChatMessage } from '../lib/firestore';
+import { FirestoreService, Pod, PodPost, ChatRoom as Room, Message, Startup, FreelanceGig, Notification, ChatMessage } from '../lib/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 // Custom hooks for Firestore operations

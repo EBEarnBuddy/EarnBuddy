@@ -32,7 +32,8 @@ import {
   Smile,
   Video,
   Edit3,
-  FileText
+  FileText,
+  Lock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useRooms } from '../hooks/useFirestore';
@@ -47,7 +48,7 @@ import { communityPostsAPI } from '../lib/axios';
 const CommunityPage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const { pods, loading: podsLoading, joinPod, leavePod } = usePods();
-  const { rooms, loading: roomsLoading, joinRoom } = useRooms();
+  const { rooms, loading: roomsLoading, joinRoom, createRoom } = useRooms();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'pods' | 'rooms'>('pods');
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +58,11 @@ const CommunityPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'trending'>('trending');
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    name: '',
+    description: '',
+    isPrivate: false
+  });
 
   // Real trending topics from pods data
   const trendingTopics = pods.length > 0 ? pods.slice(0, 8).map(pod => ({
@@ -232,6 +238,27 @@ const CommunityPage: React.FC = () => {
       setCommunityPosts([]);
     } finally {
       setPostsLoading(false);
+    }
+  };
+
+  const handleCreateRoom = async () => {
+    if (!newRoom.name.trim() || !currentUser) return;
+
+    try {
+      await createRoom({
+        name: newRoom.name,
+        description: newRoom.description,
+        members: [currentUser.uid],
+        createdBy: currentUser.uid,
+        isPrivate: newRoom.isPrivate,
+        category: 'General',
+        hasWhiteboard: true,
+        hasVideoCall: true
+      });
+      setNewRoom({ name: '', description: '', isPrivate: false });
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Error creating room:', error);
     }
   };
 
@@ -787,6 +814,91 @@ const CommunityPage: React.FC = () => {
           onClose={() => setShowPostModal(false)}
           onSuccess={handlePostSuccess}
         />
+
+        {/* Create Room Modal */}
+        <AnimatePresence>
+          {showCreateModal && (
+            <motion.div
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCreateModal(false)}
+            >
+              <motion.div
+                className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Room</h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Room Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newRoom.name}
+                      onChange={(e) => setNewRoom(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
+                      placeholder="Enter room name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={newRoom.description}
+                      onChange={(e) => setNewRoom(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 resize-none"
+                      rows={3}
+                      placeholder="Describe your room"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="isPrivate"
+                      checked={newRoom.isPrivate}
+                      onChange={(e) => setNewRoom(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                      className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                    />
+                    <label htmlFor="isPrivate" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Private Room
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <motion.button
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    onClick={handleCreateRoom}
+                    disabled={!newRoom.name.trim()}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: newRoom.name.trim() ? 1.02 : 1 }}
+                    whileTap={{ scale: newRoom.name.trim() ? 0.98 : 1 }}
+                  >
+                    Create Room
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
