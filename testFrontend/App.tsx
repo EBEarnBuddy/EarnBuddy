@@ -1,4 +1,4 @@
-// app.tsx - CORRECTED CODE
+// App.tsx
 import React, { createContext, useContext, useState, useEffect, FC, ReactNode } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -15,7 +15,7 @@ import { AlertCircle, LogIn, UserPlus } from 'lucide-react';
 
 // Import all necessary components
 import PodsPage from './PodsPage';
-import PodDetail from './PodDetail'; // <-- IMPORT PodDetail here
+import PodDetail from './PodDetail';
 import RoomsPage from './RoomsPageTemp';
 import RoomList from './RoomList';
 
@@ -208,6 +208,7 @@ const Dashboard: FC = () => {
     const [view, setView] = useState<'rooms' | 'pods'>('rooms');
     const [selectedRoom, setSelectedRoom] = useState<{ id: string; name: string } | null>(null);
     const [selectedPod, setSelectedPod] = useState<any | null>(null);
+    const [isPodJoined, setIsPodJoined] = useState<boolean>(false);
 
     const handleSignOut = async () => {
         try {
@@ -217,15 +218,14 @@ const Dashboard: FC = () => {
         }
     };
     
-    // This is the function that is causing the issue.
-    // It is called in PodsPage and PodDetail to set the selected pod.
-    // When called with no argument, it sets selectedPod to undefined.
-    // In PodDetail, onLeavePod is called, which passes no argument.
-    // This causes selectedPod to be undefined, which leads to the error.
-    // The solution is to check for a null value when setting the selectedPod.
+    const handleSelectPod = (pod: any, isJoined: boolean) => {
+        setSelectedPod(pod);
+        setIsPodJoined(isJoined);
+    };
 
     const handleLeavePod = () => {
         setSelectedPod(null);
+        setIsPodJoined(false);
     };
 
     return (
@@ -274,11 +274,11 @@ const Dashboard: FC = () => {
                         ) : ( 
                             selectedPod ? (
                                 <motion.div key="pod-detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                    <PodDetail pod={selectedPod} onLeavePod={handleLeavePod} onLogout={handleSignOut} />
+                                    <PodDetail pod={selectedPod} onLeavePod={handleLeavePod} onLogout={handleSignOut} isJoined={isPodJoined} />
                                 </motion.div>
                             ) : (
                                 <motion.div key="pod-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                                    <PodsPage onSelectPod={setSelectedPod} onLogout={handleSignOut} />
+                                    <PodsPage onSelectPod={handleSelectPod} onLogout={handleSignOut} />
                                 </motion.div>
                             )
                         )}

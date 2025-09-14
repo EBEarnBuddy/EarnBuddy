@@ -1,6 +1,7 @@
 
 # backend/main.py
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pythonBackend.routes import auth, test, pods, posts, reply # Existing imports
 from pythonBackend.routes import rooms # <--- NEW: Import the rooms router
@@ -109,3 +110,5 @@ async def test_mongo_connection():
         return {"status": "connected", "collections": collections}
     except Exception as e:
         return {"status": "error", "message": f"Could not connect to MongoDB: {e}"}
+    
+app.mount("/static", StaticFiles(directory="static"), name="static")

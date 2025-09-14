@@ -7,7 +7,7 @@ import firebase_admin
 # Initialize only once
 def initialize_firebase():
     if not firebase_admin._apps:
-        cred = credentials.Certificate("backend/serviceAccountKey.json")
+        cred = credentials.Certificate("pythonBackend/serviceAccountKey.json")
         initialize_app(cred)
 
 

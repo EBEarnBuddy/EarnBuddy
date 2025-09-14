@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List
+import os
+import json
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
+from typing import List, Optional
 from datetime import datetime
 from pydantic import ValidationError
 from bson import ObjectId
 import asyncio
+import aiofiles
 
 from pythonBackend.database.mongo import db
 from pythonBackend.models.posts import PostModel, PostCreateModel, PostWithUser
@@ -34,31 +37,59 @@ async def fetch_user_for_post(post_doc):
 # --- Create Post ---
 @router.post("/", response_model=PostWithUser, status_code=status.HTTP_201_CREATED)
 async def create_post(
-    post_data: PostCreateModel,
+    content: str = Form(...),
+    podId: str = Form(...),
+    slug: str = Form(...),
+    hashtags: str = Form("[]"),
+    mentions: str = Form("[]"),
+    type: str = Form(...),
+    image: Optional[UploadFile] = File(None),
     current_user_uid: str = Depends(get_current_user_uid)
 ):
     now = datetime.utcnow()
     
-    post_doc = post_data.model_dump(by_alias=True, exclude_none=True)
-    post_doc["userId"] = current_user_uid
-    post_doc["createdAt"] = now
-    post_doc["updatedAt"] = now
-    post_doc["likes"] = []
-    post_doc["bookmarks"] = []
-    post_doc["replies"] = []
-
-    # Ensure podId is a valid ObjectId
     try:
-        pod_obj_id = ObjectId(post_data.podId)
+        hashtags_list = json.loads(hashtags)
+        mentions_list = json.loads(mentions)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid format for hashtags or mentions.")
+
+    image_url = None
+    if image:
+        upload_folder = "static/images"
+        os.makedirs(upload_folder, exist_ok=True)
+        file_path = os.path.join(upload_folder, image.filename)
+        
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(await image.read())
+            
+        image_url = f"http://127.0.0.1:8000/static/images/{image.filename}"
+
+    post_doc = {
+        "userId": current_user_uid,
+        "podId": ObjectId(podId),
+        "content": content,
+        "slug": slug,
+        "hashtags": hashtags_list,
+        "mentions": mentions_list,
+        "type": type,
+        "imageUrl": image_url,
+        "createdAt": now,
+        "updatedAt": now,
+        "likes": [],
+        "bookmarks": [],
+        "replies": [],
+    }
+
+    try:
+        pod_obj_id = ObjectId(podId)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid Pod ID format.")
 
-    # Check if the pod exists
     pod = await db.pods.find_one({"_id": pod_obj_id})
     if not pod:
         raise HTTPException(status_code=404, detail="Pod not found.")
     
-    # Check if the current user is a member of the pod
     if current_user_uid not in pod.get("members", []):
         raise HTTPException(status_code=403, detail="Not authorized to post in this pod.")
 
@@ -67,13 +98,11 @@ async def create_post(
         created_post = await db.posts.find_one({"_id": result.inserted_id})
         
         if created_post:
-            # Update the pod's 'posts' list with the new post's ID
             await db.pods.update_one(
                 {"_id": pod_obj_id},
                 {"$addToSet": {"posts": created_post['_id']}}
             )
             
-            # Fetch user details for the response
             user = await fetch_user_for_post(created_post)
             if user:
                 return PostWithUser(post=convert_post_doc_to_model(created_post, PostModel), user=user)
@@ -81,8 +110,6 @@ async def create_post(
                 return PostWithUser(post=convert_post_doc_to_model(created_post, PostModel), user=None)
 
         raise HTTPException(status_code=500, detail="Failed to retrieve created post.")
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=f"Validation error: {e.errors()}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create post: {e}")
 

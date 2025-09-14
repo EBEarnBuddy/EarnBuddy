@@ -1,8 +1,8 @@
 from typing import List, Optional
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
 from datetime import datetime
-from pythonBackend.models.pyobjectid import PyObjectId # Import PyObjectId
-from pythonBackend.models.users import UserModel # <-- ADD THIS LINE
+from pythonBackend.models.pyobjectid import PyObjectId
+from pythonBackend.models.users import UserModel
 
 # --- The full PostModel for representation (what the backend returns) ---
 class PostModel(BaseModel):
@@ -11,7 +11,7 @@ class PostModel(BaseModel):
     podId: PyObjectId 
     type: str = "text"
     content: str
-    imageUrl: Optional[HttpUrl] = None
+    imageUrl: Optional[str] = None
     hashtags: List[str] = []
     mentions: List[str] = []
     slug: str = Field(...)
@@ -19,7 +19,7 @@ class PostModel(BaseModel):
     bookmarks: List[str] = []
     createdAt: datetime
     updatedAt: datetime
-    replies: Optional[List[PyObjectId]] = [] # <-- Added replies field
+    replies: Optional[List[PyObjectId]] = []
 
     class Config:
         populate_by_name = True
@@ -34,7 +34,7 @@ class PostCreateModel(BaseModel):
     hashtags: List[str] = []
     mentions: List[str] = []
     type: str = "text"
-    imageUrl: Optional[HttpUrl] = None
+    imageUrl: Optional[str] = None
 
     class Config:
         populate_by_name = True
@@ -44,6 +44,6 @@ class PostCreateModel(BaseModel):
 # New model to represent a post with the associated user for the frontend
 class PostWithUser(BaseModel):
     post: PostModel
-    user: Optional[UserModel] = None # <-- REMOVED THE QUOTES
+    user: Optional[UserModel] = None
 
 PostWithUser.model_rebuild()
