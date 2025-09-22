@@ -1,8 +1,16 @@
 import axios from 'axios';
-import { auth } from './firebase';
+// import { auth } from './firebase'; // Ensure correct type import
+
+// If you have a firebase.ts file, export 'auth' with its type, e.g.:
+// import { Auth } from 'firebase/auth';
+// export const auth: Auth = getAuth(app);
+
+// Then, import with type:
+import type { Auth } from 'firebase/auth';
+declare const auth: Auth;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com',
   timeout: 5000, // 5 second timeout
 });
 
@@ -56,7 +64,7 @@ export const communityPostsAPI = {
     userId?: string;
   }) => {
     // Don't send auth headers, pass user info directly
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/posts/community-posts`, postData);
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com'}/api/posts/community-posts`, postData);
     return response.data;
   },
 
@@ -67,14 +75,14 @@ export const communityPostsAPI = {
     pod_filter?: string;
   }) => {
     // Don't send auth headers for getting posts (they're public)
-    const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/posts/community-posts`, { params });
+    const response = await axios.get(`${import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com'}/api/posts/community-posts`, { params });
     return response.data;
   },
 
   // Like/unlike a community post
   likePost: async (postId: string) => {
     // Don't send auth headers for likes (temporarily)
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/posts/community-posts/${postId}/like`);
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com'}/api/posts/community-posts/${postId}/like`);
     return response.data;
   }
 };
@@ -91,7 +99,7 @@ export const roomMessagesAPI = {
     type?: string;
     attachment?: any;
   }) => {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/messages/room`, messageData);
+    const response = await axios.post(`${import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com'}/api/messages/room`, messageData);
     return response.data;
   },
 
@@ -100,7 +108,7 @@ export const roomMessagesAPI = {
     skip?: number;
     limit?: number;
   }) => {
-    const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/messages/room/${roomId}`, { params });
+    const response = await axios.get(`${import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com'}/api/messages/room/${roomId}`, { params });
     return response.data;
   }
 };

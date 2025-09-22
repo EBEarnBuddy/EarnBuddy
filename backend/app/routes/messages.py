@@ -217,9 +217,9 @@ async def get_room_messages_options(room_id: str, response: Response):
 @router.get("/room/{room_id}")
 async def get_room_messages(
     room_id: str,
+    response: Response,
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    response: Response  # <-- No default value, no comma missing
+    limit: int = Query(50, ge=1, le=100)
 ):
     await add_cors_headers(response)
     try:

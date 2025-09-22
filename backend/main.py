@@ -13,9 +13,6 @@ from app.routes import auth, projects, profile, upload, pods, posts, reply, room
 from app.database.mongo import db
 from app.core.firebase import initialize_firebase
 
-# Import custom CORS middleware
-from app.middleware.cors import CustomCORSMiddleware
-
 load_dotenv()
 
 @asynccontextmanager
@@ -65,7 +62,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware - More explicit configuration
+# ✅ CORS middleware - unified setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -73,19 +70,18 @@ app.add_middleware(
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
+        "http://localhost:4173",
         "https://beta.earnbuddy.tech",  # Explicitly allow beta domain
         "https://earnbuddy.tech",       # Allow main domain too
+        "https://earnbuddy-frontend.onrender.com",
         os.getenv("FRONTEND_URL", "")   # Allow custom frontend URL from env
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=86400,  # Cache preflight for 24 hours
+    allow_methods=["*"],   # Allow all methods
+    allow_headers=["*"],   # Allow all headers
+    expose_headers=["*"],  # Expose headers if needed
+    max_age=86400          # Cache preflight for 24 hours
 )
-
-# Add custom CORS middleware as a backup
-app.add_middleware(CustomCORSMiddleware)
 
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
