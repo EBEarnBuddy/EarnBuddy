@@ -73,6 +73,7 @@ app.add_middleware(
         "http://localhost:4173",
         "https://beta.earnbuddy.tech",  # Explicitly allow beta domain
         "https://earnbuddy.tech",       # Allow main domain too
+        "https://earnbuddy-frontend.onrender.com",
         os.getenv("FRONTEND_URL", "")   # Allow custom frontend URL from env
     ],
     allow_credentials=True,
