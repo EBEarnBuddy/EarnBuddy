@@ -14,8 +14,14 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
+    host: true, // listen on all network interfaces
     proxy: {
       '/api': 'http://localhost:5000',
     },
+  },
+  preview: {
+    host: true, // allow external hosts
+    allowedHosts: ['earnbuddy-frontend.onrender.com'], // add your Render domain here
+    port: Number(process.env.PORT) || 4173, // use Render port if set
   },
 });
