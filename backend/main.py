@@ -69,8 +69,10 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
+        "http://localhost:3000"
         "http://127.0.0.1:5174",
         "http://localhost:4173",
+
         "https://beta.earnbuddy.tech",  # Explicitly allow beta domain
         "https://earnbuddy.tech",       # Allow main domain too
         "https://earnbuddy-frontend.onrender.com",
