@@ -1,25 +1,88 @@
-# Node modules
-node_modules/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Environment files
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .env
 .env.local
 .env.*.local
 venv -
 
-# Build output
-dist/
-build/
+# Environment variables (sensitive information, for MongoDB connection at root)
+.env
+
+# --- Backend Specific Ignores (inside the backend/ folder) ---
+
+# Firebase service account key (sensitive information, inside backend/ folder)
+# Ensure this exact filename is correct
+pythonBackend/serviceAccountKey.json
+
+# Python virtual environment
+pythonBackend/venv/
+pythonBackend/.venv/
+pythonBackend/env/
+
+# Compiled Python files
+pythonBackend/__pycache__/
+pythonBackend/*.pyc
+
+# IDE and editor files
+pythonBackend/.vscode/
+pythonBackend/.idea/
+pythonBackend/*.sublime-project
+pythonBackend/*.sublime-workspace
 
 # Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-/backend/__pycache__
-/backend/app/database/__pycache__
-/backend/app/routes/__pycache__
-/backend/app/models/__pycache__
-/venv
-/backend/app/core/__pycache__
-/backend/app/middleware/__pycache__
-/backend/app/__pycache__
+pythonBackend/*.log
+pythonBackend/logs/
+
+# pytest cache
+pythonBackend/.pytest_cache/
+pythonBackend/.coverage
+
+# FastAPI/Uvicorn specific
+pythonBackend/.mypy_cache/
+pythonBackend/.ruff_cache/
+
+
+# --- Frontend Specific Ignores (common for React/Node.js) ---
+# Node modules
+frontend/node_modules/
+
+# Build artifacts
+frontend/build/
+frontend/dist/
+
+# Logs
+frontend/*.log
+frontend/logs/
+
+# VS Code settings
+frontend/.vscode/
+
+# .env files specific to frontend if you have them inside frontend/
+# frontend/.env
+
+# Python virtual environment (if at root of repo)
+venv/
+.venv/
+env/
