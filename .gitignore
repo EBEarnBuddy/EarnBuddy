@@ -23,7 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .env
-#--- Global Ignores (for the whole repo) ---
+.env.local
+.env.*.local
+venv -
 
 # Environment variables (sensitive information, for MongoDB connection at root)
 .env
