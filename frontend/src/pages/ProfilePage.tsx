@@ -24,7 +24,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useAnalytics } from '../hooks/useFirestore';
+import { useAnalytics, usePods, useRooms } from '../hooks/useFirestore';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -36,6 +36,8 @@ import PostedProjectsList from '../components/PostedProjectsList';
 const ProfilePage: React.FC = () => {
   const { currentUser, userProfile, updateProfile } = useAuth();
   const { analytics, loading: analyticsLoading } = useAnalytics();
+  const { pods } = usePods();
+  const { rooms } = useRooms();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingSkills, setIsEditingSkills] = useState(false);
@@ -422,11 +424,14 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const joinedPods = currentUser ? pods.filter(p => p.members.includes(currentUser.uid)) : [];
+  const joinedRooms = currentUser ? rooms.filter(r => r.members.includes(currentUser.uid)) : [];
+
   const stats = [
     { label: 'Projects Created', value: userAnalytics?.projectsCreated || 0, icon: MessageCircle },
     { label: 'Projects Applied', value: userAnalytics?.projectsApplied || 0, icon: Briefcase },
     { label: 'Projects Bookmarked', value: userAnalytics?.projectsBookmarked || 0, icon: BookOpen },
-    { label: 'Total Earnings', value: userProfile?.totalEarnings || '$0', icon: TrendingUp }
+    { label: 'Communities Joined', value: joinedPods.length, icon: Users }
   ];
 
   const analyticsStats = [
@@ -674,6 +679,45 @@ const ProfilePage: React.FC = () => {
 
         {activeTab === 'overview' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Joined Pods and Rooms */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Users className="w-6 h-6 text-emerald-600" />
+                Your Communities
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Pods Joined</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{joinedPods.length}</span>
+                  </div>
+                  {joinedPods.length > 0 ? (
+                    <ul className="space-y-2">
+                      {joinedPods.slice(0, 6).map((p) => (
+                        <li key={p.id} className="text-sm text-gray-800 dark:text-gray-200 truncate">{p.name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">You haven't joined any pods yet.</p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Rooms Joined</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{joinedRooms.length}</span>
+                  </div>
+                  {joinedRooms.length > 0 ? (
+                    <ul className="space-y-2">
+                      {joinedRooms.slice(0, 6).map((r) => (
+                        <li key={r.id} className="text-sm text-gray-800 dark:text-gray-200 truncate">{r.name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">You haven't joined any rooms yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
             {/* Skills */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">

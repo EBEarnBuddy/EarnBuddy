@@ -5,7 +5,6 @@ import {
   Users,
   Plus,
   Search,
-  Filter,
   TrendingUp,
   Zap,
   Globe,
@@ -13,31 +12,18 @@ import {
   Leaf,
   DollarSign,
   Palette,
-  ArrowLeft,
-  Star,
   MessageCircle,
-  Hash,
-  Eye,
-  Clock,
-  UserPlus,
-  Settings,
-  Bell,
-  BellOff,
   Heart,
   Bookmark,
   Share2,
   MoreHorizontal,
-  Send,
   Image as ImageIcon,
   Smile,
-  Video,
-  Edit3,
   FileText,
   Lock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, useRooms } from '../hooks/useFirestore';
-import { PodCard } from '../components/ui/pod-card';
 import { RoomCard } from '../components/ui/room-card';
 import { Skeleton } from '../components/ui/skeleton';
 import DashboardNavbar from '../components/DashboardNavbar';
@@ -46,8 +32,8 @@ import { FirestoreService } from '../lib/firestore';
 import { communityPostsAPI } from '../lib/axios';
 
 const CommunityPage: React.FC = () => {
-  const { currentUser, logout } = useAuth();
-  const { pods, loading: podsLoading, joinPod, leavePod } = usePods();
+  const { currentUser } = useAuth();
+  const { pods, joinPod } = usePods();
   const { rooms, loading: roomsLoading, joinRoom, createRoom } = useRooms();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'pods' | 'rooms'>('pods');
@@ -67,7 +53,7 @@ const CommunityPage: React.FC = () => {
   // Real trending topics from pods data
   const trendingTopics = pods.length > 0 ? pods.slice(0, 8).map(pod => ({
     tag: `#${pod.name.replace(/\s+/g, '')}`,
-    posts: pod.postCount || 0,
+    posts: (pod as any).postCount || 0,
     trend: '+0%'
   })) : [];
 
@@ -173,14 +159,7 @@ const CommunityPage: React.FC = () => {
     navigate(`/room/${roomId}`);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
+  // logout not used on this page currently
 
   const handlePostSuccess = async () => {
     // Refresh posts
@@ -394,28 +373,30 @@ const CommunityPage: React.FC = () => {
             )}
           </div>
 
-          {/* Category Filters */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <motion.button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
-                    selectedCategory === category.id
-                      ? 'bg-emerald-600 text-white shadow-lg'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Icon className="w-4 h-4" />
-                  {category.name}
-                </motion.button>
-              );
-            })}
-          </div>
+          {/* Category Filters - Pods only */}
+          {activeTab === 'pods' && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => {
+                const Icon = category.icon;
+                return (
+                  <motion.button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center gap-2 ${
+                      selectedCategory === category.id
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {category.name}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Content based on active tab */}
@@ -715,7 +696,7 @@ const CommunityPage: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Total Posts</span>
-                        <span className="font-bold text-gray-900 dark:text-white">{pods.reduce((total, pod) => total + (pod.postCount || 0), 0)}</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{pods.reduce((total, pod) => total + ((pod as any).postCount || 0), 0)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Active Builders</span>

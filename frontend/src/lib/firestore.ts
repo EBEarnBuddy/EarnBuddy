@@ -627,6 +627,26 @@ export class FirestoreService {
     }
   }
 
+  static async addCommentToPost(postId: string, userId: string, content: string): Promise<void> {
+    const postRef = doc(db, 'podPosts', postId);
+    const userProfile = await this.getUserProfile(userId);
+    const newComment: PodComment = {
+      id: doc(collection(db, 'podPosts', postId, 'comments')).id,
+      userId,
+      userName: userProfile?.displayName || 'Anonymous',
+      userAvatar: userProfile?.photoURL || '',
+      content: content.trim(),
+      createdAt: serverTimestamp() as unknown as Timestamp,
+      likes: []
+    } as any;
+
+    // Append comment to embedded array and update updatedAt
+    await updateDoc(postRef, {
+      comments: arrayUnion(newComment as any),
+      updatedAt: serverTimestamp()
+    });
+  }
+
   static async pinPost(postId: string, podId: string): Promise<void> {
     const batch = writeBatch(db);
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Paperclip, Smile, Video, Monitor, X, Mic, File } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { roomMessagesAPI } from '../../lib/axios';
+import { roomMessagesAPI, uploadAPI } from '../../lib/axios';
 
 interface ChatInterfaceProps {
   roomName: string;
@@ -20,12 +20,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  // Typing indicators can be added later
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  // Whiteboard is not used inside this component now
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
@@ -108,6 +108,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() && !selectedFile) return;
+    if (!currentUser) return;
 
     try {
       if (selectedFile) {
@@ -115,16 +116,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const fileType = selectedFile.type.startsWith('image/') ? 'image' :
                         selectedFile.type.startsWith('video/') ? 'video' : 'file';
 
+        // Upload file first to get URL
+        const uploadRes = await uploadAPI.uploadFile(selectedFile);
+        const uploadedUrl = uploadRes?.data?.url || previewUrl;
+
         await roomMessagesAPI.sendMessage({
           roomId,
           content: newMessage || `Shared a ${fileType}`,
-          senderId: currentUser.uid,
-          senderName: userProfile?.displayName || currentUser.displayName || 'Anonymous',
-          senderAvatar: userProfile?.photoURL || currentUser.photoURL || '',
+          senderId: currentUser!.uid,
+          senderName: userProfile?.displayName || currentUser!.displayName || 'Anonymous',
+          senderAvatar: userProfile?.photoURL || currentUser!.photoURL || '',
           type: fileType,
           attachment: {
-            file: selectedFile,
-            url: previewUrl,
+            url: uploadedUrl,
             name: selectedFile.name,
             type: selectedFile.type,
             size: formatFileSize(selectedFile.size)
@@ -136,9 +140,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         await roomMessagesAPI.sendMessage({
           roomId,
           content: newMessage,
-          senderId: currentUser.uid,
-          senderName: userProfile?.displayName || currentUser.displayName || 'Anonymous',
-          senderAvatar: userProfile?.photoURL || currentUser.photoURL || '',
+          senderId: currentUser!.uid,
+          senderName: userProfile?.displayName || currentUser!.displayName || 'Anonymous',
+          senderAvatar: userProfile?.photoURL || currentUser!.photoURL || '',
           type: 'text'
         });
       }
@@ -346,12 +350,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           >
             <Video className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
-          <button
-            onClick={() => setShowWhiteboard(true)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <Monitor className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
+          {/* Whiteboard button removed in simplified room UI */}
         </div>
       </div>
 
@@ -413,9 +412,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 >
                   <Paperclip className="w-4 h-4 text-gray-500" />
                 </button>
-                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
-                  <Smile className="w-4 h-4 text-gray-500" />
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowMediaOptions(false);
+                      setNewMessage(prev => prev + ' 🙂');
+                    }}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors"
+                  >
+                    <Smile className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -426,9 +433,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2"
+                  className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 md:w-auto w-full"
                 >
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 justify-between">
                     <button
                       onClick={() => handleFileSelect('image')}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-sm"

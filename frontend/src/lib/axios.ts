@@ -113,4 +113,17 @@ export const roomMessagesAPI = {
   }
 };
 
+// Upload API
+export const uploadAPI = {
+  uploadFile: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    const base = import.meta.env.VITE_API_URL || 'https://earnbuddy-g88i.onrender.com';
+    const response = await api.post(`${base}/api/upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  }
+};
+
 export default api;

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Hash, Settings, UserPlus, Bell, BellOff, X } from 'lucide-react';
+import { ArrowLeft, Hash, Settings, UserPlus, Bell, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePods, usePodPosts } from '../hooks/useFirestore';
 import { PodFeed } from '../components/ui/pod-feed';
@@ -17,6 +17,7 @@ const PodPage: React.FC = () => {
 
   const pod = pods.find(p => p.id === podId);
   const isMember = currentUser && pod ? pod.members.includes(currentUser.uid) : false;
+  const isAdmin = currentUser && pod ? ((pod as any).creatorId === currentUser.uid || ((pod as any).moderators || []).includes(currentUser.uid)) : false;
 
   const handleJoinPod = async () => {
     if (!currentUser || !podId) return;
@@ -38,7 +39,7 @@ const PodPage: React.FC = () => {
   };
 
   const handleCreatePost = async (content: string, imageUrl?: string) => {
-    if (!currentUser) return;
+    if (!currentUser || !isAdmin) return;
     try {
       await createPost(content, currentUser.uid, imageUrl);
     } catch (error) {
@@ -161,6 +162,9 @@ const PodPage: React.FC = () => {
           posts={posts}
           loading={postsLoading}
           onCreatePost={handleCreatePost}
+          onLikePost={() => {}}
+          onBookmarkPost={() => {}}
+          canPost={isAdmin}
         />
       </div>
 

@@ -237,6 +237,14 @@ async def create_post(
                 detail="Not a member of this pod"
             )
 
+        # Enforce admin/moderator-only posting for pods
+        allowed_posters = set([pod.get("creatorId")] + pod.get("moderators", []))
+        if current_user["_id"] not in allowed_posters:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only pod admins or moderators can post"
+            )
+
         post_obj = PostModel(
             **post_data.model_dump(),
             authorId=current_user["_id"],

@@ -142,20 +142,48 @@ const DiscoverPage: React.FC = () => {
 
   // Personalized stats based on user data
   const getPersonalizedStats = () => {
-    if (!analytics) {
-      return [
-        { label: 'Profile Views', value: '0', icon: Eye, change: '+0%' },
-        { label: 'Posts Created', value: '0', icon: MessageCircle, change: '+0%' },
-        { label: 'Pods Joined', value: '0', icon: Users, change: '+0%' },
-        { label: 'Projects Completed', value: '0', icon: Award, change: '+0%' }
-      ];
+    const joinedPods = currentUser ? pods.filter(p => p.members?.includes(currentUser.uid)) : [];
+    const profileViews = analytics?.profileViews ?? 0;
+    const postsCreated = analytics?.postsCreated ?? 0;
+    const projectsCompleted = (userProfile?.completedProjects as number) ?? analytics?.completedProjects ?? 0;
+
+    // Compute simple deltas using localStorage snapshot per user
+    const storageKey = currentUser ? `dashboardStats:${currentUser.uid}` : 'dashboardStats:guest';
+    const prevRaw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    const prev = prevRaw ? JSON.parse(prevRaw) as { profileViews: number; postsCreated: number; podsJoined: number; projectsCompleted: number; } : null;
+
+    const podsJoined = joinedPods.length;
+
+    const computeChange = (prevVal: number | undefined, currVal: number) => {
+      if (prevVal === undefined || prevVal === null) return '+0%';
+      if (prevVal === 0) return currVal === 0 ? '+0%' : '+100%';
+      const pct = Math.round(((currVal - prevVal) / prevVal) * 100);
+      const sign = pct >= 0 ? '+' : '';
+      return `${sign}${pct}%`;
+    };
+
+    const changes = {
+      profileViews: computeChange(prev?.profileViews, profileViews),
+      postsCreated: computeChange(prev?.postsCreated, postsCreated),
+      podsJoined: computeChange(prev?.podsJoined, podsJoined),
+      projectsCompleted: computeChange(prev?.projectsCompleted, projectsCompleted)
+    };
+
+    // Persist current snapshot for next session
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, JSON.stringify({
+        profileViews,
+        postsCreated,
+        podsJoined,
+        projectsCompleted
+      }));
     }
 
     return [
-      { label: 'Profile Views', value: analytics.profileViews?.toString() || '0', icon: Eye, change: '+0%' },
-      { label: 'Posts Created', value: analytics.postsCreated?.toString() || '0', icon: MessageCircle, change: '+0%' },
-      { label: 'Pods Joined', value: analytics.podsJoined?.toString() || '0', icon: Users, change: '+0%' },
-      { label: 'Projects Completed', value: analytics.completedProjects?.toString() || '0', icon: Award, change: '+0%' }
+      { label: 'Profile Views', value: profileViews.toString(), icon: Eye, change: changes.profileViews },
+      { label: 'Posts Created', value: postsCreated.toString(), icon: MessageCircle, change: changes.postsCreated },
+      { label: 'Pods Joined', value: podsJoined.toString(), icon: Users, change: changes.podsJoined },
+      { label: 'Projects Completed', value: projectsCompleted.toString(), icon: Award, change: changes.projectsCompleted }
     ];
   };
 

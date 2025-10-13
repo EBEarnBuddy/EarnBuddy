@@ -30,6 +30,7 @@ interface PodFeedProps {
   onCreatePost: (content: string, imageUrl?: string) => void;
   onLikePost: (postId: string) => void;
   onBookmarkPost: (postId: string) => void;
+  canPost?: boolean;
 }
 
 export const PodFeed: React.FC<PodFeedProps> = ({ 
@@ -38,7 +39,8 @@ export const PodFeed: React.FC<PodFeedProps> = ({
   loading, 
   onCreatePost, 
   onLikePost, 
-  onBookmarkPost 
+  onBookmarkPost,
+  canPost = false
 }) => {
   const { currentUser } = useAuth();
   const [newPost, setNewPost] = useState('');
@@ -93,7 +95,8 @@ export const PodFeed: React.FC<PodFeedProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Create Post */}
+      {/* Create Post - visible only to admins/moderators */}
+      {canPost && (
       <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="flex gap-3">
           <img
@@ -140,6 +143,7 @@ export const PodFeed: React.FC<PodFeedProps> = ({
           className="hidden"
         />
       </div>
+      )}
 
       {/* Posts Feed */}
       <div className="flex-1 overflow-y-auto">
